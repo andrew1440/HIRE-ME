@@ -14,7 +14,7 @@ body {
  
   .carousel-caption {
     bottom: 3rem;
-    z-index: 10;
+    /* z-index: 10; */
   }
   
   
@@ -140,7 +140,7 @@ div#cart table tr td {
 div#cart table tr td img {
     min-width: 28px;
     max-width: 128px;
-    height: 56px;
+    height: 56px; 
     background: #ffffff;
     display: block;
 }
