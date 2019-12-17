@@ -11,7 +11,7 @@ var globVarA;
 
 _i("close").addEventListener('click', function () { this.removeEventListener('click', customize); _i('dtls').style.display = "none"; });
 _i("closeb").addEventListener('click', function () { this.removeEventListener('click', customize); _i('cart').style.display = "none"; });
-_i("viewCart").addEventListener('click', function () { this.removeEventListener('click', customize); _i('dtls').style.display = "none"; _i('cart').style.display = "block"; });
+// _i("viewCart").addEventListener('click', function () { this.removeEventListener('click', customize); _i('dtls').style.display = "none"; _i('cart').style.display = "block"; });
 _f('dtls').addEventListener('submit', function (e) { _p(e); })
 function btnCust() {
     var a, b, c;
@@ -24,9 +24,9 @@ function customize() {
     var a, b, c, d;
     a = this.parentNode.children;
     _i('dtls').style.display = "block";
-    _i('dtlsName').innerText = a[0].innerText;
-    _i('dtlsImg').src = a[1].src;
-    d = a[2].innerText.replace('price: Ksh.', '');
+    _i('dtlsName').innerText = a[1].innerText;
+    _i('dtlsImg').src = a[3].src;
+    d = a[4].innerText.replace('price range: Ksh.', '');
     globVarA = parseInt(d.replace(' ', ''));
     _i('dtlsPrice').innerText = globVarA;
     _f('dtls')[0].value = 1;
