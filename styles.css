@@ -1,6 +1,15 @@
+<<<<<<< HEAD
 /* GLOBAL STYLES
 -------------------------------------------------- */
 /* Padding below the footer and lighter body text */
+=======
+<<<<<<< HEAD
+=======
+/* GLOBAL STYLES
+-------------------------------------------------- */
+/* Padding below the footer and lighter body text */
+>>>>>>> e027ec52e6b87f3bfab9b1b6bc903f03e107c6fe
+>>>>>>> master
 
 .Home{
     background-size: cover;
@@ -12,20 +21,17 @@ body {
   }
   
   
-  /* CUSTOMIZE THE CAROUSEL
-  -------------------------------------------------- */
-  
-  /* Carousel base class */
+ 
   .carousel {
     margin-bottom: 4rem;
   }
-  /* Since positioning the image, we need to help out the caption */
+ 
   .carousel-caption {
     bottom: 3rem;
-    z-index: 10;
+    /* z-index: 10; */
   }
   
-  /* Declare heights because of positioning of img element */
+  
   .carousel-item {
     height: 32rem;
   }
@@ -38,10 +44,7 @@ body {
   }
   
   
-  /* MARKETING CONTENT
-  -------------------------------------------------- */
-  
-  /* Center align the text within the three columns below the carousel */
+
   .marketing .col-lg-4 {
     margin-bottom: 1.5rem;
     text-align: center;
@@ -55,6 +58,7 @@ body {
   }
   
   
+<<<<<<< HEAD
   /* Features
   ------------------------- */
   
@@ -64,6 +68,15 @@ body {
   
   /* Thin out the marketing headings */
   .feature-heading {
+=======
+ 
+  .featurette-divider {
+    margin: 5rem 0; 
+  }
+  
+ 
+  .featurette-heading {
+>>>>>>> master
     font-weight: 300;
     line-height: 1;
     letter-spacing: -.05rem;
@@ -184,6 +197,7 @@ body {
     padding: 6px;
   }
   
+<<<<<<< HEAD
   .contact h2 {
     text-align: center center;
     margin-top: 30px;
@@ -191,3 +205,106 @@ body {
     padding-bottom: 20px;
     font-family: 'Gabriela', serif;
   }
+=======
+  div#dtls,
+div#cart ,#buy{
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    z-index: 1;
+}
+
+button#close,
+button#closeb {
+    position: fixed;
+    right: 10px;
+    top: 10px;
+    color: #f00;
+    font: 900 2em sans-serif;
+    border-radius: 50%;
+}
+
+div#dtls>div,#buy>div {
+    background: #76aac9;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    max-width: 900px;
+    margin: auto;
+    padding: 3px 7px;
+    border-radius: 0px 0px 7px 7px;
+    color: blue;
+}
+
+div#dtls>div>h2,#buy>div>h3 {
+    width: 90%;
+}
+
+div#dtls>div>div {
+    max-width: 620px;
+    padding: 2px;
+}
+
+div#dtls>div>div:last-of-type {
+    min-width: calc(100% - 350px);
+}
+
+div#dtls>div>div>img {
+    display: block;
+    width: 250px;
+    height: 250px;
+    background: #ffffff;
+}
+
+div#dtls>div>div>form>label {
+    display: block;
+}
+
+div#cart>div {
+    background: #94c6d3;
+    max-width: 960px;
+    margin: auto;
+    padding: 3px 7px;
+    border-radius: 0px 0px 7px 7px;
+}
+
+div#cart table {
+    width: 100%;
+}
+
+div#cart table tr th {
+    border: 3px solid #000000;
+    border-width: 0px 0px 3px 1px;
+    text-transform: uppercase;
+    padding: 1px 3px;
+}
+
+div#cart table tr td {
+    border: 1px solid #142e35;
+    border-width: 0px 0px 1px 1px;
+    padding: 1px 3px;
+}
+
+div#cart table tr td img {
+    min-width: 28px;
+    max-width: 128px;
+    height: 56px; 
+    background: #19383d;
+    display: block;
+}
+
+div#cart table tr td button {
+    color: rgb(40, 175, 51);
+    font: 900 1.4em sans-serif;
+}
+.img{
+  height: 250px;
+  width: 250px;
+  border-radius: 10%;
+  display: none;
+}
+>>>>>>> master
