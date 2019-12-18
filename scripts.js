@@ -26,7 +26,7 @@ function customize() {
     _i('dtls').style.display = "block";
     _i('dtlsName').innerText = a[1].innerText;
     _i('dtlsImg').src = a[3].src;
-    d = a[4].innerText.replace('price range: Ksh.', '');
+    d = a[4].innerText.replace('Price range: Ksh.', '');
     globVarA = parseInt(d.replace(' ', ''));
     _i('dtlsPrice').innerText = globVarA;
     _f('dtls')[0].value = 1;
@@ -41,7 +41,7 @@ function dtlChange() {
         alert("Grand Tota:Ksh " + f);
         if (true) {
             confirm("Do you want it delivered? Remember that cost depend on location");
-            prompt('Enter location');
+            alert('delivery at 1000 fixed')
             alert(' Delivery will be made soon. Thank you for using our services.');
             return 0;
         }
@@ -98,13 +98,4 @@ function display() {
         default: alert(_f('dtls')[5].value + 'invalid Selection display'); break;
     }
 }
-// var image1 = new Image()
-//       image1.src=""  
-//       var image2 = new Image()
-//       image2.src=""
-//       var image3 = new Image()
-//       image3.src=""
-//       var image4 = new Image()
-//       image4.src=""
-//       var image5 = new Image()
-//       image5.src="images/img8.jpg"
+ 
