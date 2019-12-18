@@ -44,7 +44,7 @@ body {
   
  
   .featurette-divider {
-    margin: 5rem 0; 
+    margin: 3rem 0; 
   }
   
  
@@ -257,8 +257,13 @@ p{
 }
 h2,h3,h4,h5,h6{
   font-family: 'Lakki Reddy', cursive;
+  color: blue;
 }
 
+body{
+  background-color:rgb(93, 165, 165);
+  color: black;
+}
 
 
  
