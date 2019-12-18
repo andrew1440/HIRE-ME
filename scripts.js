@@ -98,13 +98,4 @@ function display() {
         default: alert(_f('dtls')[5].value + 'invalid Selection display'); break;
     }
 }
-// var image1 = new Image()
-//       image1.src=""  
-//       var image2 = new Image()
-//       image2.src=""
-//       var image3 = new Image()
-//       image3.src=""
-//       var image4 = new Image()
-//       image4.src=""
-//       var image5 = new Image()
-//       image5.src="images/img8.jpg"
+ 
