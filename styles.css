@@ -383,6 +383,9 @@ input::placeholder {
 #text::placeholder {
   color: black;
 }
+textarea{
+  border: solid black 3px;
+}
 
 hr{
   width: 70%;
