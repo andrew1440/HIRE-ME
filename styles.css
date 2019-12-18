@@ -254,10 +254,16 @@ float: left;
 
 p{
   font-family: 'Calistoga', cursive;
+  font-size: 20px;
 }
-h2,h3,h4,h5,h6{
+h2,h3,h4,h5{
   font-family: 'Lakki Reddy', cursive;
-  color: blue;
+  color: rgb(50, 50, 199);
+}
+h6{
+  font-family: 'Girassol', cursive;
+  color: rgb(9, 84, 223);
+  font-size: 20px;
 }
 
 body{
