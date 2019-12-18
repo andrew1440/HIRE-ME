@@ -24,6 +24,117 @@
 </head>
 
 <body>
+  <div id="dtls">
+    <button id="close">X</button>
+    <div>
+      <h2 id="dtlsName">Product Name</h2>
+      <div><img id="dtlsImg" src="" alt="Product image"></div>
+      <div>
+        <form name="dtls">
+         
+          <label>No.Items <input type="number" /></label>
+          <label>Name of item
+              <input type="text" id="txtx">
+            </label>
+          <label>Quality
+            <select>
+              <option value="1">Great/High</option>
+              <option value="2">Good/moderate</option>
+              <option value="3">Secondhand</option>
+              <option value="4">poor/low</option>
+            </select>
+          </label>
+          <label>Duration
+            <select>
+              <option value="1">A month</option>
+              <option value="2">Three weeks</option>
+              <option value="3">Two weeks</option>
+              <option value="4">A week</option>
+              <option value="5">a day</option>
+            </select>
+          </label>
+          <label>Delivery location
+            <select>
+              <option value="1">Nairobi</option>
+              <option value="2">Kisumu</option>
+              <option value="3">Mombasa</option>
+              <option value="4">Nakuru</option>
+              <option value="5">central</option>
+            </select>
+          </label>
+          <label>Garanter
+            <select>
+              <option value='1'>none</option>
+              <option value='2'>A structure</option>
+              <option value='3'>A person</option>
+              <option value='4'>House items</option>
+            </select>
+          </label>
+        </form>
+        <h3>KES <span id="dtlsPrice">0</span>.00 </h3>
+        <!-- <button id="addCartBtn">Add to Cart</button> -->
+        <button id="buyBtn">Hire now</button>
+        <!-- <button id="viewCart">View Cart</button> -->
+      </div>
+    </div>
+  </div>
+
+  <div id="cart">
+    <button id="closeb">X</button>
+    <div>
+      <h2>CART</h2>
+      <table>
+        <tr>
+          <th>Image</th>
+          <th>Name</th>
+          <th>Quantity</th>
+          <th>Price</th>
+          <th>Remove</th>
+        </tr>
+        <tr>
+          <td><img src="" /></td>
+          <td>Name</td>
+          <td><input type="number" class="qnty"></td>
+          <td>KES <span>0</span>.00</td>
+          <td><button class="remove">X</td>
+        </tr>
+        <tr>
+          <td><img src="" /></td>
+          <td>Name</td>
+          <td><input type="number" class="qnty"></td>
+          <td>KES <span>0</span>.00</td>
+          <td><button class="remove">X</td>
+        </tr>
+        <tr>
+          <td><img src="" /></td>
+          <td>Name</td>
+          <td><input type="number" class="qnty"></td>
+          <td>KES <span>0</span>.00</td>
+          <td><button class="remove">X</td>
+        </tr>
+        <tr>
+          <td><img src="" /></td>
+          <td>Name</td>
+          <td><input type="number" class="qnty"></td>
+          <td>KES <span>0</span>.00</td>
+          <td><button class="remove">X</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+   <script type="text/javascript">
+    var image1 = new Image()
+       image1.src="https://images.pexels.com/photos/164634/pexels-photo-164634.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"  
+       var image2 = new Image()
+       image2.src="https://images.pexels.com/photos/1545743/pexels-photo-1545743.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
+       var image3 = new Image()
+       image3.src="https://images.pexels.com/photos/241316/pexels-photo-241316.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
+       var image4 = new Image()
+      image4.src="https://images.pexels.com/photos/112460/pexels-photo-112460.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
+       var image5 = new Image()
+      image5.src="https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
+  </script> 
+ 
   <div class="home">
     <img src="">
   </div>
