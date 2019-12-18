@@ -254,16 +254,10 @@ float: left;
 
 p{
   font-family: 'Calistoga', cursive;
-  font-size: 20px;
 }
-h2,h3,h4,h5{
+h2,h3,h4,h5,h6{
   font-family: 'Lakki Reddy', cursive;
-  color: rgb(50, 50, 199);
-}
-h6{
-  font-family: 'Girassol', cursive;
-  color: rgb(9, 84, 223);
-  font-size: 20px;
+  color: blue;
 }
 
 body{
@@ -333,14 +327,4 @@ input::placeholder {
 
 #text::placeholder {
   color: black;
-}
-  
-hr{
-  width: 70%;
-  text-align: center;
-  height: 5px;
-  color: blue;
-  background-color: black;
-  margin-top:10%;
-  margin-bottom: 10%;
 }
