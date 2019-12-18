@@ -1,22 +1,6 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-/* GLOBAL STYLES
--------------------------------------------------- */
-/* Padding below the footer and lighter body text */
-=======
-<<<<<<< HEAD
-=======
-/* GLOBAL STYLES
--------------------------------------------------- */
-/* Padding below the footer and lighter body text */
->>>>>>> e027ec52e6b87f3bfab9b1b6bc903f03e107c6fe
->>>>>>> master
-
 .Home{
     background-size: cover;
 }
-=======
->>>>>>> 436ff0dc888a1ebc13613ca995a09ee9e4266ab4
 body {
     padding-top: 3rem;
     padding-bottom: 3rem;
@@ -61,7 +45,6 @@ body {
   }
   
   
-<<<<<<< HEAD
   /* Features
   ------------------------- */
   
@@ -71,15 +54,6 @@ body {
   
   /* Thin out the marketing headings */
   .feature-heading {
-=======
- 
-  .featurette-divider {
-    margin: 5rem 0; 
-  }
-  
- 
-  .featurette-heading {
->>>>>>> master
     font-weight: 300;
     line-height: 1;
     letter-spacing: -.05rem;
@@ -199,8 +173,6 @@ body {
   .title {
     padding: 6px;
   }
-  
-<<<<<<< HEAD
   .contact h2 {
     text-align: center center;
     margin-top: 30px;
@@ -208,7 +180,6 @@ body {
     padding-bottom: 20px;
     font-family: 'Gabriela', serif;
   }
-=======
   div#dtls,
 div#cart ,#buy{
     position: fixed;
@@ -310,9 +281,6 @@ div#cart table tr td button {
   border-radius: 10%;
   display: none;
 }
-<<<<<<< HEAD
->>>>>>> master
-=======
 #slider{
   width: 100%;
   height: 700px;
@@ -406,4 +374,3 @@ float: left;
 .image_slide{
     width: 100%;
   }
->>>>>>> 436ff0dc888a1ebc13613ca995a09ee9e4266ab4
