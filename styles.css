@@ -1,4 +1,3 @@
-
 body {
     padding-top: 3rem;
     padding-bottom: 3rem;
@@ -45,7 +44,7 @@ body {
   
  
   .featurette-divider {
-    margin: 5rem 0; 
+    margin: 3rem 0; 
   }
   
  
@@ -78,7 +77,7 @@ button#closeb {
 }
 
 div#dtls>div,#buy>div {
-    background: #ab6ae0;
+    background: #6acee0;
     display: flex;
     justify-content: space-between;
     flex-wrap: wrap;
@@ -249,3 +248,89 @@ float: left;
 .image_slide{
     width: 100%;
   }
+  h1{
+    font-family: 'Girassol', cursive;
+  }
+
+p{
+  font-family: 'Calistoga', cursive;
+  font-size: 20px;
+}
+h2,h3,h4,h5{
+  font-family: 'Lakki Reddy', cursive;
+  color: rgb(50, 50, 199);
+}
+h6{
+  font-family: 'Girassol', cursive;
+  color: rgb(9, 84, 223);
+  font-size: 20px;
+}
+
+body{
+  background-color:rgb(93, 165, 165);
+  color: black;
+}
+
+
+ 
+
+  input {
+    width: 400px;
+    background: transparent;
+    color: black;
+}
+
+textarea {
+    width: 750px;
+    height: 300px;
+    background: transparent;
+    color: black;
+}
+.slide4 {
+  text-align: center;
+  color: white;
+  height: 100vh;
+  padding-top: 50px;
+}
+
+.contacts {
+  text-align: center;
+  background-color:blue;
+  /* background-repeat: no-repeat; */
+  background-size: cover;
+  width: 80%;
+  left: 0;
+  right: 0;
+  color: black;
+  margin-top: 1%;
+  display: none;
+
+}
+
+input {
+  margin: 3%;
+  background-color: transparent;
+  width: 350px;
+  z-index: 1;
+  border: solid 3px black;
+  color: black;
+}
+
+input::placeholder {
+  color: black;
+}
+
+#text {
+  height: 200px;
+  width: 65%;
+  margin-top: 1%;
+  margin-bottom: 2%;
+  background-color: transparent;
+  z-index: 1;
+  border: solid 2px black;
+  color: black;
+}
+
+#text::placeholder {
+  color: black;
+}

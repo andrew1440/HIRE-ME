@@ -26,7 +26,7 @@ function customize() {
     _i('dtls').style.display = "block";
     _i('dtlsName').innerText = a[1].innerText;
     _i('dtlsImg').src = a[3].src;
-    d = a[4].innerText.replace('price range: Ksh.', '');
+    d = a[4].innerText.replace('Price range: Ksh.', '');
     globVarA = parseInt(d.replace(' ', ''));
     _i('dtlsPrice').innerText = globVarA;
     _f('dtls')[0].value = 1;
@@ -41,7 +41,7 @@ function dtlChange() {
         alert("Grand Tota:Ksh " + f);
         if (true) {
             confirm("Do you want it delivered? Remember that cost depend on location");
-            prompt('Enter location');
+            alert('delivery at 1000 fixed')
             alert(' Delivery will be made soon. Thank you for using our services.');
             return 0;
         }
@@ -99,3 +99,27 @@ function display() {
     }
 }
  
+
+function checkEmpty() {
+    var name = document.forms['forms'].elements[0].value;
+    var email = document.forms['forms'].elements[1].value;
+    var message = document.forms['forms'].elements[2].value;
+
+    if (name == "" && email == "") {
+        alert('please enter your details');
+        return 0;
+    }
+    else {
+        if (name == "") {
+            alert("please enter your name!");
+        }
+        else if (email == "") {
+            alert("please enter your email!");
+        }
+    }
+    if ((name !== "" && email != "" && text == "") || (name != "" && email != "" && text != "")) {
+        alert("Dear " + name + " your message was received successfully.");
+        document.getElementById('results').innerHTML = "Dear " + name + " your message was received successfully you will be contacted soon. Thank you.";
+    }
+}
+
