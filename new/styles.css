@@ -328,13 +328,3 @@ input::placeholder {
 #text::placeholder {
   color: black;
 }
-  
-hr{
-  width: 70%;
-  text-align: center;
-  height: 5px;
-  color: blue;
-  background-color: black;
-  margin-top:10%;
-  margin-bottom: 10%;
-}
