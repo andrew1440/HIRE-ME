@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 /* GLOBAL STYLES
 -------------------------------------------------- */
 /* Padding below the footer and lighter body text */
@@ -14,6 +15,8 @@
 .Home{
     background-size: cover;
 }
+=======
+>>>>>>> 436ff0dc888a1ebc13613ca995a09ee9e4266ab4
 body {
     padding-top: 3rem;
     padding-bottom: 3rem;
@@ -33,7 +36,7 @@ body {
   
   
   .carousel-item {
-    height: 32rem;
+    height: 45rem;
   }
   .carousel-item > img {
     position: absolute;
@@ -307,4 +310,100 @@ div#cart table tr td button {
   border-radius: 10%;
   display: none;
 }
+<<<<<<< HEAD
 >>>>>>> master
+=======
+#slider{
+  width: 100%;
+  height: 700px;
+background-color: #9eb7f0;
+  margin-top: 5px;
+  margin-bottom: 30px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 5px 0px;
+}
+
+
+#slider{
+height: 500px;
+  overflow: hidden;
+ 
+}
+#slider figure div{
+float: left;  
+  width: 20%;
+}
+#slider figure img{
+  width: 100%;
+  float: left;
+  height: 100%;
+  border-radius: 0%;
+}  
+#slider figure{
+  position: relative;
+  width: 400%;
+  margin: 0px;
+  left: 0;
+  animation: 50s ravi infinite;
+  
+}
+
+@keyframes ravi { 
+    0%{
+      left: 0%;  
+    }
+   10%{
+       left: 0%;   
+    }
+  12%{
+        left: -100%;  
+    }
+   22%{
+        left: -200%;  
+    }
+   24%{
+         left: -200%; 
+    }
+   34%{
+         left: -200%; 
+    }
+   36%{
+         left: -300%; 
+    }
+   46%{
+         left: -300%; 
+    }
+   48%{
+         left: -400%; 
+    }
+   58%{
+         left: -400%; 
+    }
+  60%{
+        left: -300%;  
+    }
+   70%{
+         left: -300%; 
+    }
+    72%{
+         left: 200%; 
+    }
+   82%{
+         left: -200%; 
+    }
+   84%{
+         left: -100%; 
+    }
+   94%{
+         left:-100%; 
+    }
+   96%{
+         left: 0%; 
+    }
+
+}
+.image_slide{
+    width: 100%;
+  }
+>>>>>>> 436ff0dc888a1ebc13613ca995a09ee9e4266ab4
