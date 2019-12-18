@@ -2,6 +2,9 @@
 -------------------------------------------------- */
 /* Padding below the footer and lighter body text */
 
+.Home{
+    background-size: cover;
+}
 body {
     padding-top: 3rem;
     padding-bottom: 3rem;
