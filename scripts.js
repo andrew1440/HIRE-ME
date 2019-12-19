@@ -6,8 +6,8 @@ function _p(a) { return a.preventDefault(); }
 _i("btnDetails").addEventListener('click', function () { this.removeEventListener('click', customize);});
 _i("btd").addEventListener('click', function () { this.removeEventListener('click', customize);});
 _i("btd1").addEventListener('click', function () { this.removeEventListener('click', customize);});
-
-
+_i('deliver').addEventListener('click', function () { this.removeEventListener('click', customize);});
+_i('buyBtn').addEventListener('click', function () { this.removeEventListener('click', customize);});
 var globVarA;
 
 //function tmpImgs(){for(var a= (_t('img').length - 1); a>6; a--){_t('img')[a].src="img/favicon.jpeg";}} tmpImgs();
@@ -42,15 +42,11 @@ function dtlChange() {
     f = _i('dtlsPrice').innerText = a * (globVarA + b + c + d + e);
     _i('buyBtn').addEventListener('click', function () {
         alert("Grand Tota:Ksh " + f);
-        if (true) {
-            confirm("Do you want it delivered? Remember that cost depend on location");
-            alert('delivery at 1000 fixed')
-            alert(' Delivery will be made soon. Thank you for using our services.');
-            return 0;
-        }
-
-
     });
+    _i('deliver').addEventListener('click',function(){ 
+        alert('delivery at Ksh.1000 fixed');
+        alert(' Delivery will be made soon. Thank you for using our services.');
+       return 0;})
 }
 
 
