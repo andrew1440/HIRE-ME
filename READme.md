@@ -1,14 +1,17 @@
-# APPLICATION NAME
+## APPLICATION NAME
 HIRE-ME
 
-### By 
+## By 
 *Andrew Odongo
 *Benson Owino
 *Faith Nenkai
 *Elvis Wasike
 
 ## Description
-This application 
+This application connects products and services to people willing to hire them in an easier and convenient way by making a one stop hiring online shop. 
+
+## Problem Statement
+Difficulty in finding a single platform that one can hire any equipments, service or product depending in his/her geographical location at an affordable price from the vast number of vendors willing to give out their equipments for hire.
 
 ## Github Live Link
 Here is the github live link https://github.com/andrew1440/HIRE-ME
@@ -31,7 +34,7 @@ There are no known bugs at the moment.
 * Bootstrap4
 * JQuery
 
-### BDD
+## BDD
 Behaviour Input Output Enter your name , email address and message or comment I would like to work with you.Press Submit , Pop up your name.We have received your message.Thank you for reaching out to us.
 
 ## Contact
