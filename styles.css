@@ -339,6 +339,9 @@ textarea {
 }
 .slide4 {
   text-align: center;
+  background: url("Img/Elephant.jpeg");
+  background-repeat: no-repeat;
+  background-size: cover;
   color: white;
   height: 100vh;
   padding-top: 50px;
