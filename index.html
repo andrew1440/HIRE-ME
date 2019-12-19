@@ -6,14 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Home Page | Hire ME - Responsive Website Template</title>
-  <link rel="stylesheet" href="./bootstrap.css" type="text/css">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="shortcut icon"
     href="https://images.pexels.com/photos/2574656/pexels-photo-2574656.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
     type="image/jpeg">
   <title>Home Page</title>
 </head>
-
 <body>
   <div id="dtls">
     <button id="close">X</button>
@@ -163,10 +162,9 @@
     </div>
   </nav>
   <nav class="navbar navbar-light bg-light">
-    <form class="form-inline">
-      <input class="form-control mr-sm-2" type="Login" placeholder="Login" aria-label="Search">
-      <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Login</button>
-      <input class="form-control mr-sm-2" type="search" placeholder="Sign in" aria-label="Login">
+    <form class="form-inline" action="process_login" method="post">
+      <input class="form-control mr-sm-2" type="text" name="name" placeholder="Type your username here" aria-label="Search">
+      <input class="form-control mr-sm-2" type="password"  name="pass" placeholder="Type your password here" aria-label="Login">
       <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Sign in</button>
     </form>
   </nav>
@@ -219,7 +217,7 @@
               </div>
               <h1>HIRE-ME</h1>
               <p>To create a platform where people can hire equipment,products and services at an affordable rate from any location for a period of time</p>
-              <p><a class="btn btn-lg btn-primary" href="#" role="button">Sign up today</a></p>
+              <button class="btn btn-lg btn-primary" id="btnDetails">Sign up today</button>
             </div>
             
           </div>
@@ -281,7 +279,7 @@
             Kenya. Short rentals of vehicles is one the booming businesses in Kenya today.</p>
             <img src="https://images.pexels.com/photos/120049/pexels-photo-120049.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" alt="" class="img">
             <h6>Price range: Ksh.60 000</h6>
-            <button>View details</button>
+            <button id="bndtt">View details</button>
           <!-- <p><a class="btn btn-secondary" href="#" role="button"> &raquo;</a></p> -->
         </div>
         <div class="col-lg-4">
@@ -295,7 +293,7 @@
             proficiently and we try to arrange the best possible solutions for our clients .</p>
             <img src="https://images.pexels.com/photos/2651794/pexels-photo-2651794.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" alt="" class="img">
             <h6>Price range: Ksh.30 000</h6>
-            <button>View details</button>
+            <button id="bntt">View details</button>
         </div><!-- /.col-lg-4 -->
         <div class="col-lg-4">
           <img class="bd-placeholder-img rounded-circle" width="140" height="140" Img src="Img/Quip_logo.jpg"
@@ -309,7 +307,7 @@
             Founded in 2001, we are focused on the development of world-class branded products</p>
             <img src="https://images.pexels.com/photos/1350593/pexels-photo-1350593.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" alt="" class="img">
             <h6>Price range: Ksh.30 000</h6>
-            <button>View details</button>
+            <button id="bnt">View details</button>
         </div>
       </div>
 
@@ -377,25 +375,7 @@
         </div>
       </div>
 <center><br><br>   <hr class="featurette-divider"><br></center>
-   
-<center>
-<div class="_icon">
-        <a href="http://twitter.com/login"><img src="Img/twitter.png"></a>
-        <a href="http://dribble.com/session/new"><img src="Img/dribble.png"></a>
-        <a href="http://www.facebook.com/softnook/?ref=py_c"><img src="Img/facebook.png"></a>
-        <a href="http://gpluseurope.com/"><img src="Img/g_plus.png"></a>
-        <a href="http://www.skype.com/en/"><img src="Img/skype.png"></a>
-        <a href="http://www.stumbleupon.com/"><img src="Img/stumble_upon.png"></a>
-        <a href="http://medium.com/behance-blog"><img src="Img/behance (1).png"></a>
-        <a href="http://www.pinterest.com/"><img src="Img/pinterest.png"></a>
-        <a href="http://www.flickr.com/photos/flickr/"> <img src="Img/flickr.png"></a>
-        <a href="http://www.youtube.com/channel/UCAENMhFzaceZJyq3BtXBMaA"> <img src="./Img/you_tube.png"></a>
-      </div>
-    </center>
-  <center>
-    <br><br>
-    <hr>
-  </center>
+  
       
       <!-- /END THE FEATURES -->
 
@@ -417,19 +397,31 @@
             <textarea type="text" name="MESSAGE" id="mce-MESSAGE" class="message" id="" cols="35" rows="10"
                 placeholder="Your message here"></textarea><br>
             <button type="submit" class="btn btn-primary button" name="subscribe"
-                id="mc-embedded-subscribe">Submit</button>
+                id="btnDetail">Submit</button>
         </div>
     </form>
 </div>
-
-
-</body>
-<script src="scripts.js"></script>
+<center>
+  <div class="_icon">
+          <a href="http://twitter.com/login"><img src="Img/twitter.png"></a>
+          <a href="http://dribble.com/session/new"><img src="Img/dribble.png"></a>
+          <a href="http://www.facebook.com/softnook/?ref=py_c"><img src="Img/facebook.png"></a>
+          <a href="http://gpluseurope.com/"><img src="Img/g_plus.png"></a>
+          <a href="http://www.skype.com/en/"><img src="Img/skype.png"></a>
+          <a href="http://www.stumbleupon.com/"><img src="Img/stumble_upon.png"></a>
+          <a href="http://medium.com/behance-blog"><img src="Img/behance (1).png"></a>
+          <a href="http://www.pinterest.com/"><img src="Img/pinterest.png"></a>
+          <a href="http://www.flickr.com/photos/flickr/"> <img src="Img/flickr.png"></a>
+          <a href="http://www.youtube.com/channel/UCAENMhFzaceZJyq3BtXBMaA"> <img src="./Img/you_tube.png"></a>
+        </div>
+      </center>
+    <center>
+      <br><br>
+      <hr>
+    </center>
+<script src="scripts.js" type="text/javascript"></script>
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
   
 
 </body>
 </html>
-
-
-  
