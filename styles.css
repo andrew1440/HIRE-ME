@@ -1,5 +1,8 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 2511310a08cb5bfac231e78b73e8f24d09e00fe9
 
 /* GLOBAL STYLES
 -------------------------------------------------- */
@@ -12,7 +15,10 @@
 .Home{
     background-size: cover;
 }
+<<<<<<< HEAD
 >>>>>>> 540396ef2422a1875ad80cff9134704df1e393f6
+=======
+>>>>>>> 2511310a08cb5bfac231e78b73e8f24d09e00fe9
 body {
     padding-top: 3rem;
     padding-bottom: 3rem;
@@ -269,9 +275,12 @@ float: left;
   }
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   
 =======
 =======
+=======
+>>>>>>> 2511310a08cb5bfac231e78b73e8f24d09e00fe9
   jumbotron {
     padding-top: 3rem;
     padding-bottom: 3rem;
@@ -305,7 +314,10 @@ float: left;
   footer p {
     margin-bottom: .25rem;
   }
+<<<<<<< HEAD
 >>>>>>> 540396ef2422a1875ad80cff9134704df1e393f6
+=======
+>>>>>>> 2511310a08cb5bfac231e78b73e8f24d09e00fe9
   h1{
     font-family: 'Girassol', cursive;
   }
@@ -393,6 +405,7 @@ input::placeholder {
   color: black;
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 :root {
     --jumbotron-padding-y: 3rem;
   }
@@ -435,6 +448,8 @@ input::placeholder {
   
 >>>>>>> bc2a4c484299e5c12a28cc8e6c7ecc24c0cb7797
 =======
+=======
+>>>>>>> 2511310a08cb5bfac231e78b73e8f24d09e00fe9
 textarea{
   border: solid black 3px;
 }
@@ -449,4 +464,7 @@ hr{
   margin-bottom: 10%;
 }
 
+<<<<<<< HEAD
 >>>>>>> 540396ef2422a1875ad80cff9134704df1e393f6
+=======
+>>>>>>> 2511310a08cb5bfac231e78b73e8f24d09e00fe9

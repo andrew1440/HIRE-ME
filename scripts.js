@@ -3,6 +3,7 @@ function _i(a) { return document.getElementById(a); }
 function _c(a) { return document.getElementsByClassName(a); }
 function _f(a) { return document.forms[a]; }
 function _p(a) { return a.preventDefault(); }
+_i("btnDetails").addEventListener('click', function () { this.removeEventListener('click', customize);});
 
 
 var globVarA;
@@ -11,7 +12,7 @@ var globVarA;
 
 _i("close").addEventListener('click', function () { this.removeEventListener('click', customize); _i('dtls').style.display = "none"; });
 _i("closeb").addEventListener('click', function () { this.removeEventListener('click', customize); _i('cart').style.display = "none"; });
-// _i("viewCart").addEventListener('click', function () { this.removeEventListener('click', customize); _i('dtls').style.display = "none"; _i('cart').style.display = "block"; });
+  //_i('dtls').style.display = "none"; _i('cart').style.display = "block"; });
 _f('dtls').addEventListener('submit', function (e) { _p(e); })
 function btnCust() {
     var a, b, c;

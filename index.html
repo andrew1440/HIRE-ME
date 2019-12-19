@@ -6,14 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Home Page | Hire ME - Responsive Website Template</title>
-  <link rel="stylesheet" href="./bootstrap.css" type="text/css">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="shortcut icon"
     href="https://images.pexels.com/photos/2574656/pexels-photo-2574656.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
     type="image/jpeg">
   <title>Home Page | - Responsive Website Template</title>
 </head>
-
 <body>
   <div id="dtls">
     <button id="close">X</button>
@@ -143,30 +142,18 @@
           <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#">Features</a>
+          <a class="nav-link" href="#">Features<span class="sr-only">(current)</span></a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#">Pricing</a>
-        </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown"
-            aria-haspopup="true" aria-expanded="false">
-            Dropdown link
-          </a>
-          <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-            <a class="dropdown-item" href="#">Action</a>
-            <a class="dropdown-item" href="#">Another action</a>
-            <a class="dropdown-item" href="#">Something else here</a>
-          </div>
+          <a class="nav-link" href="#">Pricing<span class="sr-only">(current)</span></a>
         </li>
       </ul>
     </div>
   </nav>
   <nav class="navbar navbar-light bg-light">
-    <form class="form-inline">
-      <input class="form-control mr-sm-2" type="Login" placeholder="Login" aria-label="Search">
-      <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Login</button>
-      <input class="form-control mr-sm-2" type="search" placeholder="Sign in" aria-label="Login">
+    <form class="form-inline" action="process_login" method="post">
+      <input class="form-control mr-sm-2" type="text" name="name" placeholder="Type your username here" aria-label="Search">
+      <input class="form-control mr-sm-2" type="password"  name="pass" placeholder="Type your password here" aria-label="Login">
       <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Sign in</button>
     </form>
   </nav>
@@ -219,7 +206,7 @@
               </div>
               <h1>HIRE-ME</h1>
               <p>To create a platform where people can hire equipment,products and services at an affordable rate from any location for a period of time</p>
-              <p><a class="btn btn-lg btn-primary" href="#" role="button">Sign up today</a></p>
+              <button class="btn btn-lg btn-primary" id="btnDetails">Sign up today</button>
             </div>
             
           </div>
@@ -281,7 +268,7 @@
             Kenya. Short rentals of vehicles is one the booming businesses in Kenya today.</p>
             <img src="https://images.pexels.com/photos/120049/pexels-photo-120049.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" alt="" class="img">
             <h6>Price range: Ksh.60 000</h6>
-            <button>View details</button>
+            <button id="bndtt">View details</button>
           <!-- <p><a class="btn btn-secondary" href="#" role="button"> &raquo;</a></p> -->
         </div>
         <div class="col-lg-4">
@@ -295,7 +282,7 @@
             proficiently and we try to arrange the best possible solutions for our clients .</p>
             <img src="https://images.pexels.com/photos/2651794/pexels-photo-2651794.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" alt="" class="img">
             <h6>Price range: Ksh.30 000</h6>
-            <button>View details</button>
+            <button id="bntt">View details</button>
         </div><!-- /.col-lg-4 -->
         <div class="col-lg-4">
           <img class="bd-placeholder-img rounded-circle" width="140" height="140" Img src="Img/Quip_logo.jpg"
@@ -309,7 +296,7 @@
             Founded in 2001, we are focused on the development of world-class branded products</p>
             <img src="https://images.pexels.com/photos/1350593/pexels-photo-1350593.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" alt="" class="img">
             <h6>Price range: Ksh.30 000</h6>
-            <button>View details</button>
+            <button id="bnt">View details</button>
         </div>
       </div>
 
@@ -376,27 +363,89 @@
           <rect width="100%" height="100%" fill="#eee" /><text x="50%" y="50%" fill="#aaa" dy=".3em"></text></img>
         </div>
       </div>
+<center><br><br>   <hr class="featurette-divider"><br></center>
+   
 
-      <hr class="featurette-divider">
-
-<div class="_icon">
-        <a href="http://twitter.com/login"><img src="Img/twitter.png"></a>
-        <a href="http://dribble.com/session/new"><img src="Img/dribble.png"></a>
-        <a href="http://www.facebook.com/softnook/?ref=py_c"><img src="Img/facebook.png"></a>
-        <a href="http://gpluseurope.com/"><img src="Img/g_plus.png"></a>
-        <a href="http://www.skype.com/en/"><img src="Img/skype.png"></a>
-        <a href="http://www.stumbleupon.com/"><img src="Img/stumble_upon.png"></a>
-        <a href="http://medium.com/behance-blog"><img src="Img/behance (1).png"></a>
-        <a href="http://www.pinterest.com/"><img src="Img/pinterest.png"></a>
-        <a href="http://www.flickr.com/photos/flickr/"> <img src="Img/flickr.png"></a>
-        <a href="http://www.youtube.com/channel/UCAENMhFzaceZJyq3BtXBMaA"> <img src="./Img/you_tube.png"></a>
-      </div>
-      
-      <!-- /END THE FEATURES -->
-
-    </div><!-- /.container -->
 
   </main>
+  <section class="jumbotron text-center">
+    <div class="container">
+      <h1 class="jumbotron-heading">Album example</h1>
+      <p class="lead text-muted">Something short and leading about the collection below—its contents, the creator, etc. Make it short and sweet, but not too short so folks don't simply skip over it entirely.</p>
+      <p>
+        <a href="#" class="btn btn-primary my-2">Main call to action</a>
+        <a href="#" class="btn btn-secondary my-2">Secondary action</a>
+      </p>
+    </div>
+  </section>
+  <div class="album py-5 bg-light">
+    <div class="container">
+
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card mb-4 box-shadow">
+            <img class="card-img-top" img src="Img/Cheetah.jpeg" alt="Card image cap">
+            <div class="card-body">
+              <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-secondary">View</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
+                </div>
+                <small class="text-muted">9 mins</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card mb-4 box-shadow">
+            <img class="card-img-top" img src="Img/LIon.jpeg" alt="Card image cap">
+            <div class="card-body">
+              <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-secondary">View</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
+                </div>
+                <small class="text-muted">9 mins</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card mb-4 box-shadow">
+            <img class="card-img-top" img src="Img/Dog1.jpeg" alt="Card image cap">
+            <div class="card-body">
+              <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-secondary">View</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
+                </div>
+                <small class="text-muted">9 mins</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card mb-4 box-shadow">
+            <img class="card-img-top" img src="Img/Elephant.jpeg" alt="Card image cap">
+            <div class="card-body">
+              <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-secondary">View</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
+                </div>
+                <small class="text-muted">9 mins</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+        </div>
+  </div>
 
   <div class="slide4">
     <!--contact us form -->
@@ -412,104 +461,41 @@
             <textarea type="text" name="MESSAGE" id="mce-MESSAGE" class="message" id="" cols="35" rows="10"
                 placeholder="Your message here"></textarea><br>
             <button type="submit" class="btn btn-primary button" name="subscribe"
-                id="mc-embedded-subscribe">Submit</button>
+                id="btnDetails">Submit</button>
         </div>
     </form>
-</div>
-<main role="main">
-
-        <section class="jumbotron text-center">
-          <div class="container">
-            <h1 class="jumbotron-heading">Album example</h1>
-            <p class="lead text-muted">Something short and leading about the collection below—its contents, the creator, etc. Make it short and sweet, but not too short so folks don't simply skip over it entirely.</p>
-            <p>
-              <a href="#" class="btn btn-primary my-2">Main call to action</a>
-              <a href="#" class="btn btn-secondary my-2">Secondary action</a>
-            </p>
-          </div>
-        </section>
-  
-        <div class="album py-5 bg-light">
-          <div class="container">
-  
-            <div class="row">
-              <div class="col-md-4">
-                <div class="card mb-4 box-shadow">
-                  <img class="card-img-top" data-src="holder.js/100px225?theme=thumb&bg=55595c&fg=eceeef&text=Thumbnail" alt="Card image cap">
-                  <div class="card-body">
-                    <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-outline-secondary">View</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
-                      </div>
-                      <small class="text-muted">9 mins</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="card mb-4 box-shadow">
-                  <img class="card-img-top" data-src="holder.js/100px225?theme=thumb&bg=55595c&fg=eceeef&text=Thumbnail" alt="Card image cap">
-                  <div class="card-body">
-                    <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-outline-secondary">View</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
-                      </div>
-                      <small class="text-muted">9 mins</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="card mb-4 box-shadow">
-                  <img class="card-img-top" data-src="holder.js/100px225?theme=thumb&bg=55595c&fg=eceeef&text=Thumbnail" alt="Card image cap">
-                  <div class="card-body">
-                    <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-outline-secondary">View</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
-                      </div>
-                      <small class="text-muted">9 mins</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-  
-              <div class="col-md-4">
-                <div class="card mb-4 box-shadow">
-                  <img class="card-img-top" data-src="holder.js/100px225?theme=thumb&bg=55595c&fg=eceeef&text=Thumbnail" alt="Card image cap">
-                  <div class="card-body">
-                    <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-outline-secondary">View</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
-                      </div>
-                      <small class="text-muted">9 mins</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            
-            
-  
-              
-           
-              
-  
+</div> 
       </main>
-  
+      
+      <br><br><br>
+      <center>
+        <div class="_icon">
+                <a href="http://twitter.com/login"><img src="Img/twitter.png"></a>
+                <a href="http://dribble.com/session/new"><img src="Img/dribble.png"></a>
+                <a href="http://www.facebook.com/softnook/?ref=py_c"><img src="Img/facebook.png"></a>
+                <a href="http://gpluseurope.com/"><img src="Img/g_plus.png"></a>
+                <a href="http://www.skype.com/en/"><img src="Img/skype.png"></a>
+                <a href="http://www.stumbleupon.com/"><img src="Img/stumble_upon.png"></a>
+                <a href="http://medium.com/behance-blog"><img src="Img/behance (1).png"></a>
+                <a href="http://www.pinterest.com/"><img src="Img/pinterest.png"></a>
+                <a href="http://www.flickr.com/photos/flickr/"> <img src="Img/flickr.png"></a>
+                <a href="http://www.youtube.com/channel/UCAENMhFzaceZJyq3BtXBMaA"> <img src="./Img/you_tube.png"></a>
+              </div>
+            </center>
+          <center>
+            <br><br>
+          </center>
+              
+              <!-- /END THE FEATURES -->
+        
+            </div><!-- /.container -->
       <footer class="text-muted">
         <div class="container">
           <p class="float-right">
             <a href="#">Back to top</a>
           </p>
-          <p>Album example is &copy; Bootstrap, but please download and customize it for yourself!</p>
-          <p>New to Bootstrap? <a href="../../">Visit the homepage</a> or read our <a href="../../getting-started/">getting started guide</a>.</p>
+          <p> &copy; </p>
+          <p>.</p>
         </div>
       </footer>
   
@@ -526,4 +512,4 @@
 </html>
 
 
-</html>
+  
