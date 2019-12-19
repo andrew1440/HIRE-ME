@@ -4,6 +4,8 @@ function _c(a) { return document.getElementsByClassName(a); }
 function _f(a) { return document.forms[a]; }
 function _p(a) { return a.preventDefault(); }
 _i("btnDetails").addEventListener('click', function () { this.removeEventListener('click', customize);});
+_i("btd").addEventListener('click', function () { this.removeEventListener('click', customize);});
+_i("btd1").addEventListener('click', function () { this.removeEventListener('click', customize);});
 
 
 var globVarA;
