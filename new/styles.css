@@ -1,18 +1,3 @@
-<<<<<<< HEAD
-=======
-
-/* GLOBAL STYLES
--------------------------------------------------- */
-/* Padding below the footer and lighter body text */
-
-/* GLOBAL STYLES
--------------------------------------------------- */
-/* Padding below the footer and lighter body text */
-
-.Home{
-    background-size: cover;
-}
->>>>>>> 540396ef2422a1875ad80cff9134704df1e393f6
 body {
     padding-top: 3rem;
     padding-bottom: 3rem;
@@ -67,10 +52,6 @@ body {
     font-weight: 300;
     line-height: 1;
     letter-spacing: -.05rem;
-  }
-  
-  .title {
-    padding: 6px;
   }
   
   div#dtls,
@@ -267,61 +248,16 @@ float: left;
 .image_slide{
     width: 100%;
   }
-<<<<<<< HEAD
-<<<<<<< HEAD
-  
-=======
-=======
-  jumbotron {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-    margin-bottom: 0;
-    background-color: #fff;
-  }
-  @media (min-width: 768px) {
-    .jumbotron {
-      padding-top: 6rem;
-      padding-bottom: 6rem;
-    }
-  }
-  
-  .jumbotron p:last-child {
-    margin-bottom: 0;
-  }
-  
-  .jumbotron-heading {
-    font-weight: 300;
-  }
-  
-  .jumbotron .container {
-    max-width: 40rem;
-  }
-  
-  footer {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-  }
-  
-  footer p {
-    margin-bottom: .25rem;
-  }
->>>>>>> 540396ef2422a1875ad80cff9134704df1e393f6
   h1{
     font-family: 'Girassol', cursive;
   }
 
 p{
   font-family: 'Calistoga', cursive;
-  font-size: 20px;
 }
-h2,h3,h4,h5{
+h2,h3,h4,h5,h6{
   font-family: 'Lakki Reddy', cursive;
-  color: rgb(50, 50, 199);
-}
-h6{
-  font-family: 'Girassol', cursive;
-  color: rgb(9, 84, 223);
-  font-size: 20px;
+  color: blue;
 }
 
 body{
@@ -392,61 +328,3 @@ input::placeholder {
 #text::placeholder {
   color: black;
 }
-<<<<<<< HEAD
-:root {
-    --jumbotron-padding-y: 3rem;
-  }
-  
-  .jumbotron {
-    padding-top: var(--jumbotron-padding-y);
-    padding-bottom: var(--jumbotron-padding-y);
-    margin-bottom: 0;
-    background-color: #fff;
-  }
-  @media (min-width: 768px) {
-    .jumbotron {
-      padding-top: calc(var(--jumbotron-padding-y) * 2);
-      padding-bottom: calc(var(--jumbotron-padding-y) * 2);
-    }
-  }
-  
-  .jumbotron p:last-child {
-    margin-bottom: 0;
-  }
-  
-  .jumbotron-heading {
-    font-weight: 300;
-  }
-  
-  .jumbotron .container {
-    max-width: 40rem;
-  }
-  
-  footer {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-  }
-  
-  footer p {
-    margin-bottom: .25rem;
-  }
-  
-  .box-shadow { box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05); }
-  
->>>>>>> bc2a4c484299e5c12a28cc8e6c7ecc24c0cb7797
-=======
-textarea{
-  border: solid black 3px;
-}
-
-hr{
-  width: 70%;
-  text-align: center;
-  height: 5px;
-  color: blue;
-  background-color: black;
-  margin-top:10%;
-  margin-bottom: 10%;
-}
-
->>>>>>> 540396ef2422a1875ad80cff9134704df1e393f6
