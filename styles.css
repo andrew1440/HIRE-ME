@@ -37,7 +37,7 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Dropdown Styles */
+/* Enhanced Dropdown Styles */
 .dropdown-menu {
     border: none;
     box-shadow: var(--shadow-lg);
@@ -47,11 +47,12 @@ body {
     position: absolute;
     display: none;
     background-color: white;
-    min-width: 200px;
+    min-width: 280px;
     right: 0;
     left: auto;
     top: 100%;
-    border: 2px solid #e5e7eb;
+    border: 1px solid #e5e7eb;
+    padding: 0;
 }
 
 .dropdown-menu.show {
@@ -59,14 +60,169 @@ body {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
-    background-color: #ffffff !important;
-    border: 2px solid #2563eb !important;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+    animation: dropdownFadeIn 0.2s ease-out;
 }
 
 .dropdown {
     position: relative;
     z-index: 1000;
+}
+
+/* User Avatar Styles */
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+}
+
+.user-avatar-large {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    margin: 0 auto;
+}
+
+/* Dropdown Button Styles */
+.dropdown-toggle {
+    border: none;
+    background: transparent;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.dropdown-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-toggle:focus {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+.dropdown-arrow {
+    font-size: 12px;
+    transition: transform 0.3s ease;
+}
+
+.dropdown-menu.show ~ .dropdown-toggle .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+/* User Info in Button */
+.user-info {
+    text-align: left;
+    line-height: 1.2;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.user-status {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+/* Dropdown Sections */
+.dropdown-section {
+    padding: 8px 0;
+}
+
+.guest-section .dropdown-item,
+.user-section .dropdown-item {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    color: var(--dark-color);
+}
+
+.dropdown-item:hover {
+    background-color: #f8fafc;
+    color: var(--primary-color);
+}
+
+.dropdown-item i {
+    width: 16px;
+}
+
+/* User Profile Header */
+.user-profile-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-details {
+    flex: 1;
+}
+
+.user-full-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--dark-color);
+    margin-bottom: 2px;
+}
+
+.user-email {
+    font-size: 14px;
+    color: #64748b;
+}
+
+/* Profile Modal Styles */
+.profile-avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 32px;
+    margin: 0 auto 16px;
+}
+
+.profile-details {
+    text-align: left;
+}
+
+.profile-details strong {
+    color: var(--dark-color);
+    font-size: 14px;
+}
+
+/* Animations */
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .dropdown-item {
@@ -308,7 +464,35 @@ footer {
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
-        min-width: 200px;
+        min-width: 250px;
+        max-width: 90vw;
+    }
+
+    .user-profile-header {
+        padding: 16px;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .user-avatar-large {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+
+    .dropdown-section.guest-section .dropdown-item,
+    .dropdown-section.user-section .dropdown-item {
+        padding: 14px 16px;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+
+    .user-info {
+        display: none !important; /* Hide on mobile to save space */
+    }
+
+    .dropdown-toggle {
+        padding: 10px;
     }
 
     .btn-outline-light {

@@ -40,15 +40,64 @@
                         <span class="badge bg-danger ms-1" id="cartCount">0</span>
                     </button>
                     <div class="dropdown" id="userMenu">
-                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" onclick="toggleDropdown()">
-                            <i class="fas fa-user"></i> Account
+                        <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userDropdown" data-bs-toggle="dropdown" onclick="toggleDropdown()" aria-expanded="false">
+                            <div class="user-avatar me-2">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="user-info d-none d-md-block">
+                                <div class="user-name" id="userName">Account</div>
+                                <small class="user-status" id="userStatus">Guest</small>
+                            </div>
+                            <i class="fas fa-chevron-down ms-2 dropdown-arrow"></i>
                         </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" id="loginBtn">Login</a></li>
-                            <li><a class="dropdown-item" href="#" id="registerBtn">Register</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" id="logoutBtn" style="display: none;">Logout</a></li>
-                        </ul>
+                        <div class="dropdown-menu user-dropdown-menu" aria-labelledby="userDropdown">
+                            <!-- Guest Menu -->
+                            <div class="dropdown-section guest-section">
+                                <a class="dropdown-item" href="#" id="loginBtn">
+                                    <i class="fas fa-sign-in-alt me-2"></i>
+                                    <span>Login</span>
+                                </a>
+                                <a class="dropdown-item" href="#" id="registerBtn">
+                                    <i class="fas fa-user-plus me-2"></i>
+                                    <span>Register</span>
+                                </a>
+                            </div>
+
+                            <!-- Authenticated User Menu -->
+                            <div class="dropdown-section user-section" style="display: none;">
+                                <div class="user-profile-header">
+                                    <div class="user-avatar-large">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div class="user-details">
+                                        <div class="user-full-name" id="userFullName">User Name</div>
+                                        <div class="user-email" id="userEmail">user@example.com</div>
+                                    </div>
+                                </div>
+                                <hr class="dropdown-divider">
+                                <a class="dropdown-item" href="#" onclick="viewProfile()">
+                                    <i class="fas fa-user-circle me-2"></i>
+                                    <span>View Profile</span>
+                                </a>
+                                <a class="dropdown-item" href="#" onclick="viewOrders()">
+                                    <i class="fas fa-shopping-bag me-2"></i>
+                                    <span>My Orders</span>
+                                </a>
+                                <a class="dropdown-item" href="#" onclick="viewFavorites()">
+                                    <i class="fas fa-heart me-2"></i>
+                                    <span>Favorites</span>
+                                </a>
+                                <a class="dropdown-item" href="#" onclick="openSettings()">
+                                    <i class="fas fa-cog me-2"></i>
+                                    <span>Settings</span>
+                                </a>
+                                <hr class="dropdown-divider">
+                                <a class="dropdown-item text-danger" href="#" id="logoutBtn">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

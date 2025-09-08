@@ -227,9 +227,12 @@ function updateAuthUI() {
     console.log('updateAuthUI called, currentUser:', currentUser);
 
     const userMenu = document.getElementById('userMenu');
-    const loginBtn = document.getElementById('loginBtn');
-    const registerBtn = document.getElementById('registerBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
+    const guestSection = userMenu.querySelector('.guest-section');
+    const userSection = userMenu.querySelector('.user-section');
+    const userName = document.getElementById('userName');
+    const userStatus = document.getElementById('userStatus');
+    const userFullName = document.getElementById('userFullName');
+    const userEmail = document.getElementById('userEmail');
 
     if (!userMenu) {
         console.error('userMenu element not found');
@@ -237,39 +240,75 @@ function updateAuthUI() {
     }
 
     if (currentUser) {
-        userMenu.querySelector('.dropdown-toggle').innerHTML = `<i class="fas fa-user me-2"></i>${currentUser.name}`;
-        loginBtn.style.display = 'none';
-        registerBtn.style.display = 'none';
-        logoutBtn.style.display = 'block';
+        // Show authenticated user interface
+        guestSection.style.display = 'none';
+        userSection.style.display = 'block';
+
+        // Update user information
+        userName.textContent = currentUser.name;
+        userStatus.textContent = 'Member';
+        userFullName.textContent = currentUser.name;
+        userEmail.textContent = currentUser.email;
+
         console.log('UI updated for logged-in user:', currentUser.name);
     } else {
-        userMenu.querySelector('.dropdown-toggle').innerHTML = '<i class="fas fa-user me-2"></i>Account';
-        loginBtn.style.display = 'block';
-        registerBtn.style.display = 'block';
-        logoutBtn.style.display = 'none';
+        // Show guest interface
+        guestSection.style.display = 'block';
+        userSection.style.display = 'none';
+
+        userName.textContent = 'Account';
+        userStatus.textContent = 'Guest';
+
         console.log('UI updated for guest user');
     }
 }
 
-// Manual dropdown toggle as fallback
+// Enhanced dropdown toggle with better functionality
 function toggleDropdown() {
     const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
-    if (dropdownMenu) {
+    const dropdownButton = document.getElementById('userDropdown');
+
+    if (dropdownMenu && dropdownButton) {
         const isVisible = dropdownMenu.classList.contains('show');
-        console.log('Manual toggle called, currently visible:', isVisible);
+        console.log('Dropdown toggle called, currently visible:', isVisible);
 
         if (isVisible) {
-            dropdownMenu.classList.remove('show');
+            closeDropdown();
         } else {
-            // Hide other dropdowns first
-            document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                menu.classList.remove('show');
-            });
-            dropdownMenu.classList.add('show');
+            openDropdown();
         }
     } else {
-        console.error('Dropdown menu not found');
+        console.error('Dropdown elements not found');
     }
+}
+
+function openDropdown() {
+    const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
+    const dropdownButton = document.getElementById('userDropdown');
+
+    // Hide other dropdowns first
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.classList.remove('show');
+    });
+
+    // Show this dropdown
+    dropdownMenu.classList.add('show');
+    dropdownButton.setAttribute('aria-expanded', 'true');
+
+    // Focus management
+    setTimeout(() => {
+        const firstItem = dropdownMenu.querySelector('.dropdown-item');
+        if (firstItem) firstItem.focus();
+    }, 100);
+}
+
+function closeDropdown() {
+    const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
+    const dropdownButton = document.getElementById('userDropdown');
+
+    dropdownMenu.classList.remove('show');
+    dropdownButton.setAttribute('aria-expanded', 'false');
+    dropdownButton.focus();
 }
 
 // Close dropdown when clicking outside
@@ -278,7 +317,44 @@ document.addEventListener('click', function(event) {
     const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
 
     if (dropdown && dropdownMenu && !dropdown.contains(event.target)) {
-        dropdownMenu.classList.remove('show');
+        closeDropdown();
+    }
+});
+
+// Keyboard navigation for dropdown
+document.addEventListener('keydown', function(event) {
+    const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
+    const dropdownButton = document.getElementById('userDropdown');
+
+    if (dropdownMenu && dropdownMenu.classList.contains('show')) {
+        const items = dropdownMenu.querySelectorAll('.dropdown-item');
+        const currentIndex = Array.from(items).findIndex(item => item === document.activeElement);
+
+        switch (event.key) {
+            case 'Escape':
+                event.preventDefault();
+                closeDropdown();
+                break;
+            case 'ArrowDown':
+                event.preventDefault();
+                const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+                items[nextIndex].focus();
+                break;
+            case 'ArrowUp':
+                event.preventDefault();
+                const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+                items[prevIndex].focus();
+                break;
+            case 'Enter':
+                event.preventDefault();
+                if (document.activeElement.classList.contains('dropdown-item')) {
+                    document.activeElement.click();
+                }
+                break;
+        }
+    } else if (event.key === 'ArrowDown' && document.activeElement === dropdownButton) {
+        event.preventDefault();
+        openDropdown();
     }
 });
 
@@ -421,6 +497,123 @@ function handleCheckout() {
     }
 
     showToast('Checkout functionality coming soon!', 'info');
+}
+
+// Enhanced dropdown menu functions
+function viewProfile() {
+    closeDropdown();
+    if (!currentUser) {
+        showToast('Please login to view your profile', 'warning');
+        openModal('loginModal');
+        return;
+    }
+
+    // Create profile modal
+    showProfileModal();
+}
+
+function viewOrders() {
+    closeDropdown();
+    if (!currentUser) {
+        showToast('Please login to view your orders', 'warning');
+        openModal('loginModal');
+        return;
+    }
+
+    showToast('Orders feature coming soon!', 'info');
+}
+
+function viewFavorites() {
+    closeDropdown();
+    if (!currentUser) {
+        showToast('Please login to view your favorites', 'warning');
+        openModal('loginModal');
+        return;
+    }
+
+    showToast('Favorites feature coming soon!', 'info');
+}
+
+function openSettings() {
+    closeDropdown();
+    if (!currentUser) {
+        showToast('Please login to access settings', 'warning');
+        openModal('loginModal');
+        return;
+    }
+
+    showToast('Settings feature coming soon!', 'info');
+}
+
+function showProfileModal() {
+    // Create a profile modal dynamically
+    const profileModal = document.createElement('div');
+    profileModal.className = 'modal fade';
+    profileModal.id = 'profileModal';
+    profileModal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">My Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <div class="profile-avatar-large">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <h4>${currentUser.name}</h4>
+                        <p class="text-muted">${currentUser.email}</p>
+                    </div>
+                    <div class="profile-details">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <strong>Name:</strong><br>
+                                ${currentUser.name}
+                            </div>
+                            <div class="col-sm-6">
+                                <strong>Email:</strong><br>
+                                ${currentUser.email}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-sm-6">
+                                <strong>Phone:</strong><br>
+                                ${currentUser.phone || 'Not provided'}
+                            </div>
+                            <div class="col-sm-6">
+                                <strong>Location:</strong><br>
+                                ${currentUser.location || 'Not provided'}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <strong>Member Since:</strong><br>
+                                ${new Date(currentUser.created_at).toLocaleDateString()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="editProfile()">Edit Profile</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(profileModal);
+    const modal = new bootstrap.Modal(profileModal);
+    modal.show();
+
+    // Remove modal from DOM when hidden
+    profileModal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(profileModal);
+    });
+}
+
+function editProfile() {
+    showToast('Edit profile feature coming soon!', 'info');
 }
 
 // Product Functions
