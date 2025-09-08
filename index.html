@@ -40,7 +40,7 @@
                         <span class="badge bg-danger ms-1" id="cartCount">0</span>
                     </button>
                     <div class="dropdown" id="userMenu">
-                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" onclick="toggleDropdown()">
                             <i class="fas fa-user"></i> Account
                         </button>
                         <ul class="dropdown-menu">
@@ -299,5 +299,30 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="scripts.js"></script>
+    <script>
+        // Ensure Bootstrap dropdowns are initialized
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all dropdowns
+            var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                return new bootstrap.Dropdown(dropdownToggleEl);
+            });
+
+            console.log('Bootstrap dropdowns initialized:', dropdownList.length);
+
+            // Add debugging for dropdown clicks
+            document.getElementById('userDropdown').addEventListener('click', function(e) {
+                console.log('Dropdown button clicked');
+                var dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
+                console.log('Dropdown menu element:', dropdownMenu);
+                console.log('Dropdown menu classes:', dropdownMenu.classList);
+                console.log('Dropdown menu display:', getComputedStyle(dropdownMenu).display);
+            });
+
+            // Test if Bootstrap is loaded
+            console.log('Bootstrap loaded:', typeof bootstrap !== 'undefined');
+            console.log('Dropdown class available:', typeof bootstrap.Dropdown !== 'undefined');
+        });
+    </script>
 </body>
 </html>

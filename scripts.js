@@ -181,43 +181,106 @@ async function handleContact(e) {
     }
 }
 
-function handleLogout() {
-    localStorage.removeItem('token');
-    currentUser = null;
-    cart = [];
-    updateAuthUI();
-    updateCartUI();
-    showToast('Logged out successfully', 'info');
+async function handleLogout() {
+  try {
+    await fetch('/api/logout', { method: 'POST' });
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+
+  localStorage.removeItem('token');
+  currentUser = null;
+  cart = [];
+  updateAuthUI();
+  updateCartUI();
+  showToast('Logged out successfully', 'info');
 }
 
-function checkAuthStatus() {
-    const token = localStorage.getItem('token');
-    if (token) {
-        // Verify token with server (simplified)
-        currentUser = { name: 'User' }; // In real app, decode token
-        updateAuthUI();
+async function checkAuthStatus() {
+  const token = localStorage.getItem('token');
+  if (token) {
+    try {
+      const response = await fetch('/api/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        currentUser = await response.json();
+        await loadCartFromServer();
+      } else {
+        localStorage.removeItem('token');
+        currentUser = null;
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      localStorage.removeItem('token');
+      currentUser = null;
     }
+    updateAuthUI();
+  }
 }
 
 // UI Update Functions
 function updateAuthUI() {
+    console.log('updateAuthUI called, currentUser:', currentUser);
+
     const userMenu = document.getElementById('userMenu');
     const loginBtn = document.getElementById('loginBtn');
     const registerBtn = document.getElementById('registerBtn');
     const logoutBtn = document.getElementById('logoutBtn');
+
+    if (!userMenu) {
+        console.error('userMenu element not found');
+        return;
+    }
 
     if (currentUser) {
         userMenu.querySelector('.dropdown-toggle').innerHTML = `<i class="fas fa-user me-2"></i>${currentUser.name}`;
         loginBtn.style.display = 'none';
         registerBtn.style.display = 'none';
         logoutBtn.style.display = 'block';
+        console.log('UI updated for logged-in user:', currentUser.name);
     } else {
         userMenu.querySelector('.dropdown-toggle').innerHTML = '<i class="fas fa-user me-2"></i>Account';
         loginBtn.style.display = 'block';
         registerBtn.style.display = 'block';
         logoutBtn.style.display = 'none';
+        console.log('UI updated for guest user');
     }
 }
+
+// Manual dropdown toggle as fallback
+function toggleDropdown() {
+    const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
+    if (dropdownMenu) {
+        const isVisible = dropdownMenu.classList.contains('show');
+        console.log('Manual toggle called, currently visible:', isVisible);
+
+        if (isVisible) {
+            dropdownMenu.classList.remove('show');
+        } else {
+            // Hide other dropdowns first
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.classList.remove('show');
+            });
+            dropdownMenu.classList.add('show');
+        }
+    } else {
+        console.error('Dropdown menu not found');
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('userMenu');
+    const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
+
+    if (dropdown && dropdownMenu && !dropdown.contains(event.target)) {
+        dropdownMenu.classList.remove('show');
+    }
+});
 
 function updateCartUI() {
     const cartCount = document.getElementById('cartCount');
@@ -235,43 +298,113 @@ function closeModal(modalId) {
     if (modal) modal.hide();
 }
 
-function openCartModal() {
-    updateCartDisplay();
-    openModal('cartModal');
+async function openCartModal() {
+  await loadCartFromServer();
+  openModal('cartModal');
 }
 
 // Cart Functions
-function addToCart(product) {
-    cart.push(product);
-    updateCartUI();
-    showToast('Item added to cart!', 'success');
+async function addToCart(product) {
+  if (!currentUser) {
+    showToast('Please login to add items to cart', 'warning');
+    openModal('loginModal');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/cart/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ productId: product.id, quantity: 1 })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      await loadCartFromServer();
+      showToast('Item added to cart!', 'success');
+    } else {
+      showToast(result.message, 'error');
+    }
+  } catch (error) {
+    showToast('Failed to add item to cart', 'error');
+  }
 }
 
-function removeFromCart(index) {
-    cart.splice(index, 1);
+async function removeFromCart(cartId) {
+  try {
+    const response = await fetch(`/api/cart/${cartId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      await loadCartFromServer();
+      showToast('Item removed from cart!', 'success');
+    } else {
+      showToast(result.message, 'error');
+    }
+  } catch (error) {
+    showToast('Failed to remove item from cart', 'error');
+  }
+}
+
+// Load cart from server
+async function loadCartFromServer() {
+  if (!currentUser) {
+    cart = [];
     updateCartUI();
-    updateCartDisplay();
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/cart', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (response.ok) {
+      cart = await response.json();
+    } else {
+      cart = [];
+    }
+  } catch (error) {
+    console.error('Failed to load cart:', error);
+    cart = [];
+  }
+
+  updateCartUI();
+  updateCartDisplay();
 }
 
 function updateCartDisplay() {
-    const cartItems = document.getElementById('cartItems');
-    if (cart.length === 0) {
-        cartItems.innerHTML = '<p class="text-center text-muted">Your cart is empty</p>';
-        return;
-    }
+  const cartItems = document.getElementById('cartItems');
+  if (!cart || cart.length === 0) {
+    cartItems.innerHTML = '<p class="text-center text-muted">Your cart is empty</p>';
+    return;
+  }
 
-    cartItems.innerHTML = cart.map((item, index) => `
-        <div class="cart-item d-flex align-items-center">
-            <img src="${item.image || 'Img/Vehicle.jpeg'}" alt="${item.name}" class="me-3" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
-            <div class="flex-grow-1">
-                <h6 class="mb-1">${item.name}</h6>
-                <p class="mb-1 text-muted">KES ${item.price}/day</p>
-            </div>
-            <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${index})">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-    `).join('');
+  cartItems.innerHTML = cart.map((item) => `
+    <div class="cart-item d-flex align-items-center">
+      <img src="${item.image || 'Img/Vehicle.jpeg'}" alt="${item.name}" class="me-3" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+      <div class="flex-grow-1">
+        <h6 class="mb-1">${item.name}</h6>
+        <p class="mb-1 text-muted">KES ${item.price}/day</p>
+        <small class="text-muted">Quantity: ${item.quantity}</small>
+      </div>
+      <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${item.id})">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `).join('');
 }
 
 function handleCheckout() {

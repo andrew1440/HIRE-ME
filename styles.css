@@ -37,6 +37,76 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Dropdown Styles */
+.dropdown-menu {
+    border: none;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--border-radius);
+    margin-top: 0.5rem;
+    z-index: 9999 !important;
+    position: absolute;
+    display: none;
+    background-color: white;
+    min-width: 200px;
+    right: 0;
+    left: auto;
+    top: 100%;
+    border: 2px solid #e5e7eb;
+}
+
+.dropdown-menu.show {
+    display: block !important;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    background-color: #ffffff !important;
+    border: 2px solid #2563eb !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dropdown {
+    position: relative;
+    z-index: 1000;
+}
+
+.dropdown-item {
+    color: var(--dark-color);
+    text-decoration: none;
+    display: block;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: var(--primary-color);
+}
+
+.dropdown-item {
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: var(--primary-color);
+}
+
+.dropdown-toggle::after {
+    margin-left: 0.5rem;
+}
+
+.btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.8);
+    color: white;
+}
+
+.btn-outline-light:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: white;
+    color: white;
+}
+
 .navbar-brand {
     font-weight: 700;
     font-size: 1.5rem;
@@ -230,6 +300,20 @@ footer {
     .d-flex.align-items-center {
         justify-content: center;
         margin-top: 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 200px;
+    }
+
+    .btn-outline-light {
+        font-size: 14px;
+        padding: 8px 16px;
     }
 
     .modal-dialog {
