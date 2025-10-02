@@ -166,6 +166,17 @@ app.get('/api/products', (req, res) => {
   });
 });
 
+// Get products by category
+app.get('/api/products/category/:category', (req, res) => {
+  const category = req.params.category;
+  db.all('SELECT * FROM products WHERE category = ? AND available = 1', [category], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ message: 'Server error' });
+    }
+    res.json(rows);
+  });
+});
+
 // Add product (for admin)
 app.post('/api/products', (req, res) => {
   const { name, description, price, category, image, location } = req.body;

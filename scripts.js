@@ -39,17 +39,16 @@ function initializeApp() {
 function setupEventListeners() {
     // Navigation
     document.getElementById('cartBtn').addEventListener('click', openCartModal);
-    document.getElementById('loginBtn').addEventListener('click', () => openModal('loginModal'));
-    document.getElementById('registerBtn').addEventListener('click', () => openModal('registerModal'));
 
     // Forms
-    document.getElementById('loginFormModal').addEventListener('submit', handleLogin);
-    document.getElementById('registerFormModal').addEventListener('submit', handleRegister);
     document.getElementById('contactForm').addEventListener('submit', handleContact);
 
     // Buttons
     document.getElementById('getStartedBtn').addEventListener('click', () => scrollToSection('services'));
-    document.getElementById('listServiceBtn').addEventListener('click', () => openModal('registerModal'));
+    document.getElementById('listServiceBtn').addEventListener('click', () => {
+        // Redirect to register page instead of opening modal
+        window.location.href = 'register.html';
+    });
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
     document.getElementById('checkoutBtn').addEventListener('click', handleCheckout);
 
@@ -690,6 +689,131 @@ function displayProducts(products) {
     `).join('');
 }
 
+function viewCategory(category) {
+    console.log('Viewing category:', category);
+    // Fetch and display products by category
+    fetchAndDisplayProductsByCategory(category);
+}
+
+// New function to fetch and display products by category
+async function fetchAndDisplayProductsByCategory(category) {
+    try {
+        console.log('Fetching products for category:', category);
+        // Show loading state
+        showLoadingState();
+        
+        const response = await fetch(`/api/products/category/${category}`);
+        console.log('Response status:', response.status);
+        const products = await response.json();
+        console.log('Products received:', products);
+        
+        if (products.length === 0) {
+            showNoProductsMessage(category);
+            return;
+        }
+        
+        displayProductsByCategory(category, products);
+    } catch (error) {
+        console.error('Failed to load products by category:', error);
+        showToast('Failed to load products. Please try again.', 'error');
+    }
+}
+
+// Function to show loading state
+function showLoadingState() {
+    const productsSection = document.getElementById('products');
+    productsSection.innerHTML = `
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Loading Products...</h2>
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Scroll to products section
+    productsSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Function to show no products message
+function showNoProductsMessage(category) {
+    const productsSection = document.getElementById('products');
+    const categoryName = getCategoryName(category);
+    
+    productsSection.innerHTML = `
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">${categoryName}</h2>
+                <p class="lead text-muted">No products available in this category yet.</p>
+                <button class="btn btn-primary" onclick="loadFeaturedProducts()">View All Products</button>
+            </div>
+        </div>
+    `;
+    
+    // Scroll to products section
+    productsSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Function to display products by category
+function displayProductsByCategory(category, products) {
+    const productsSection = document.getElementById('products');
+    const categoryName = getCategoryName(category);
+    
+    productsSection.innerHTML = `
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">${categoryName}</h2>
+                <p class="lead text-muted">Browse our selection of ${categoryName.toLowerCase()}</p>
+                <button class="btn btn-outline-primary" onclick="loadFeaturedProducts()">View All Products</button>
+            </div>
+            <div class="row g-4" id="categoryProducts">
+                <!-- Products will be loaded dynamically -->
+            </div>
+        </div>
+    `;
+    
+    // Display the products
+    const container = document.getElementById('categoryProducts');
+    container.innerHTML = products.map(product => `
+        <div class="col-md-4 mb-4">
+            <div class="card product-card h-100">
+                <img src="${product.image || 'Img/Vehicle.jpeg'}" class="card-img-top product-image" alt="${product.name}">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">${product.name}</h5>
+                    <p class="card-text text-muted">${product.description}</p>
+                    <div class="mt-auto">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="h5 text-primary fw-bold">KES ${product.price}</span>
+                            <small class="text-muted">${product.location}</small>
+                        </div>
+                        <button class="btn btn-primary w-100" onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})">
+                            <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    // Scroll to products section
+    productsSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Helper function to get category name
+function getCategoryName(category) {
+    const categoryNames = {
+        'vehicles': 'Vehicle Rentals',
+        'audio': 'Sound & Audio Equipment',
+        'tools': 'Tools & Equipment',
+        'sports': 'Sports Equipment',
+        'fashion': 'Fashion Items'
+    };
+    
+    return categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
+}
+
 // Utility Functions
 function scrollToSection(sectionId) {
     const section = document.getElementById(sectionId);
@@ -698,8 +822,65 @@ function scrollToSection(sectionId) {
     }
 }
 
-function viewCategory(category) {
-    showToast(`Viewing ${category} category - Feature coming soon!`, 'info');
+// New function to show a feature coming soon modal
+function showFeatureComingSoonModal(title, description) {
+    // Create modal dynamically
+    const modalId = 'featureComingSoonModal';
+    
+    // Remove existing modal if it exists
+    const existingModal = document.getElementById(modalId);
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modalHTML = `
+        <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-tools me-2"></i>Feature Coming Soon
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center py-5">
+                        <div class="feature-icon mb-4">
+                            <i class="fas fa-car text-primary" style="font-size: 4rem;"></i>
+                        </div>
+                        <h3 class="mb-3">${title}</h3>
+                        <p class="text-muted mb-4">${description}</p>
+                        <div class="alert alert-info text-start">
+                            <h6><i class="fas fa-info-circle me-2"></i>What to expect:</h6>
+                            <ul class="mb-0">
+                                <li>Wide selection of quality vehicles</li>
+                                <li>Competitive pricing</li>
+                                <li>Easy booking process</li>
+                                <li>24/7 customer support</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            <i class="fas fa-bell me-2"></i>Notify Me
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
+    
+    // Remove modal from DOM when hidden
+    document.getElementById(modalId).addEventListener('hidden.bs.modal', function () {
+        document.getElementById(modalId).remove();
+    });
 }
 
 function showToast(message, type = 'info') {

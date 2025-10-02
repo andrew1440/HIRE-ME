@@ -561,7 +561,22 @@ footer {
     animation: spin 1s ease-in-out infinite;
 }
 
+.spinner-border {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: text-bottom;
+    border: 0.25em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border 0.75s linear infinite;
+}
+
 @keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes spinner-border {
     to { transform: rotate(360deg); }
 }
 
@@ -674,4 +689,75 @@ footer {
         font-size: 12pt;
         line-height: 1.4;
     }
+}
+
+/* Feature Coming Soon Modal */
+.feature-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.feature-icon i {
+    color: var(--primary-color);
+}
+
+.modal-content {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    border-bottom: 1px solid #e5e7eb;
+    padding: 24px;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    border-top: 1px solid #e5e7eb;
+    padding: 24px;
+}
+
+/* Notification Button */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8, var(--primary-color));
+    transform: translateY(-2px);
+}
+
+/* Alert Styles */
+.alert-info {
+    background-color: rgba(37, 99, 235, 0.05);
+    border: 1px solid rgba(37, 99, 235, 0.1);
+    border-radius: 8px;
+}
+
+.alert-info h6 {
+    color: var(--primary-color);
+}
+
+.alert-info ul {
+    padding-left: 1.25rem;
+    margin-bottom: 0;
+}
+
+.alert-info li {
+    margin-bottom: 0.25rem;
+}
+
+.alert-info li:last-child {
+    margin-bottom: 0;
 }
