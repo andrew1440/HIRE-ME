@@ -12,9 +12,115 @@
         .confirmation-container {
             min-height: 100vh;
             background-color: #f8fafc;
+            padding: 30px 0;
+        }
+
+        .tracking-timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .tracking-timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e5e7eb;
+        }
+
+        .tracking-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+
+        .tracking-item::before {
+            content: '';
+            position: absolute;
+            left: -23px;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            border: 2px solid white;
+        }
+
+        .tracking-item.active::before {
+            background: #10b981;
+        }
+
+        .tracking-item.completed::before {
+            background: #2563eb;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background-color: rgba(251, 191, 36, 0.1);
+            color: #d97706;
+        }
+
+        .status-confirmed {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+        }
+
+        .status-processing {
+            background-color: rgba(139, 69, 19, 0.1);
+            color: #8b4513;
+        }
+
+        .status-shipped {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #059669;
+        }
+
+        .status-delivered {
+            background-color: rgba(107, 114, 128, 0.1);
+            color: #4b5563;
+        }
+
+        .mpesa-instructions {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .mpesa-steps {
+            counter-reset: step-counter;
+        }
+
+        .mpesa-step {
+            counter-increment: step-counter;
+            padding-left: 40px;
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .mpesa-step::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #2563eb;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            padding: 30px 0;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
         }
         
         .confirmation-card {
@@ -104,43 +210,97 @@
                     <p class="mb-0">Thank you for your purchase</p>
                 </div>
                 <div class="confirmation-body">
-                    <h4 class="text-center mb-4">Order Details</h4>
-                    
-                    <div class="order-details">
-                        <div class="detail-item">
-                            <span>Order Number</span>
-                            <strong>#ORD-7842</strong>
+                    <div id="orderLoading" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
-                        <div class="detail-item">
-                            <span>Date</span>
-                            <strong>October 2, 2025</strong>
-                        </div>
-                        <div class="detail-item">
-                            <span>Total Amount</span>
-                            <strong>KES 5,000</strong>
-                        </div>
-                        <div class="detail-item">
-                            <span>Payment Method</span>
-                            <strong>Credit Card</strong>
-                        </div>
-                        <div class="detail-item">
-                            <span>Status</span>
-                            <strong class="text-success">Confirmed</strong>
-                        </div>
+                        <p class="mt-2">Loading order details...</p>
                     </div>
-                    
-                    <p class="text-center text-muted">
-                        A confirmation email has been sent to your email address.
-                        You will receive updates on your order status.
-                    </p>
-                    
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-continue text-white" onclick="window.location.href='index.html'">
-                            Continue Shopping
-                        </button>
-                        <button class="btn btn-outline-primary" onclick="window.location.href='orders.html'">
-                            View Order History
-                        </button>
+
+                    <div id="orderDetails" style="display: none;">
+                        <h4 class="text-center mb-4">Order Details</h4>
+
+                        <div class="order-details">
+                            <div class="detail-item">
+                                <span>Order Number</span>
+                                <strong id="orderNumber">#ORD-7842</strong>
+                            </div>
+                            <div class="detail-item">
+                                <span>Date</span>
+                                <strong id="orderDate">October 2, 2025</strong>
+                            </div>
+                            <div class="detail-item">
+                                <span>Total Amount</span>
+                                <strong id="orderAmount">KES 5,000</strong>
+                            </div>
+                            <div class="detail-item">
+                                <span>Payment Method</span>
+                                <strong id="paymentMethod">M-Pesa</strong>
+                            </div>
+                            <div class="detail-item">
+                                <span>Status</span>
+                                <span id="orderStatus" class="status-badge status-pending">Pending</span>
+                            </div>
+                        </div>
+
+                        <!-- Order Items -->
+                        <h5 class="mt-4 mb-3">Order Items</h5>
+                        <div id="orderItems">
+                            <!-- Order items will be loaded here -->
+                        </div>
+
+                        <!-- M-Pesa Payment Instructions -->
+                        <div id="mpesaInstructions" class="mpesa-instructions" style="display: none;">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-mobile-alt me-2"></i>Complete Your M-Pesa Payment
+                            </h6>
+
+                            <div class="mpesa-steps">
+                                <div class="mpesa-step">
+                                    Go to your M-Pesa menu and select "Lipa na M-Pesa"
+                                </div>
+                                <div class="mpesa-step">
+                                    Select "Pay Bill" and enter business number: <strong>174379</strong>
+                                </div>
+                                <div class="mpesa-step">
+                                    Enter account number: <strong id="mpesaAccountNumber">ORD-7842</strong>
+                                </div>
+                                <div class="mpesa-step">
+                                    Enter amount: <strong id="mpesaAmount">KES 5,000</strong>
+                                </div>
+                                <div class="mpesa-step">
+                                    Enter your M-Pesa PIN and confirm the transaction
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                You will receive an M-Pesa payment request on your phone shortly.
+                                Please complete the payment to confirm your order.
+                            </div>
+                        </div>
+
+                        <!-- Order Tracking Timeline -->
+                        <h5 class="mt-4 mb-3">Order Tracking</h5>
+                        <div class="tracking-timeline">
+                            <div id="trackingItems">
+                                <!-- Tracking items will be loaded here -->
+                            </div>
+                        </div>
+
+                        <p class="text-center text-muted mt-4">
+                            A confirmation email has been sent to your email address.
+                            You will receive updates on your order status.
+                        </p>
+
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-continue text-white" onclick="window.location.href='index.html'">
+                                Continue Shopping
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="window.location.href='orders.html'">
+                                View Order History
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -148,5 +308,232 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Get order ID from URL parameters
+        function getOrderIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('orderId');
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-KE', {
+                style: 'currency',
+                currency: 'KES'
+            }).format(amount);
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('en-KE', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Get status badge class
+        function getStatusBadgeClass(status) {
+            const statusMap = {
+                'pending': 'status-pending',
+                'confirmed': 'status-confirmed',
+                'processing': 'status-processing',
+                'shipped': 'status-shipped',
+                'delivered': 'status-delivered',
+                'cancelled': 'status-cancelled'
+            };
+            return statusMap[status] || 'status-pending';
+        }
+
+        // Load order details
+        async function loadOrderDetails() {
+            const orderId = getOrderIdFromUrl();
+            const token = localStorage.getItem('token');
+
+            if (!orderId) {
+                document.getElementById('orderLoading').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Order ID not found. Please check your order confirmation email.
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/orders/${orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const orderData = await response.json();
+
+                    // Display order details
+                    document.getElementById('orderNumber').textContent = `#${orderData.order_number}`;
+                    document.getElementById('orderDate').textContent = formatDate(orderData.created_at);
+                    document.getElementById('orderAmount').textContent = formatCurrency(orderData.total_amount);
+                    document.getElementById('paymentMethod').textContent = orderData.payment_method || 'M-Pesa';
+
+                    // Set status badge
+                    const statusBadge = document.getElementById('orderStatus');
+                    statusBadge.textContent = orderData.status.charAt(0).toUpperCase() + orderData.status.slice(1);
+                    statusBadge.className = `status-badge ${getStatusBadgeClass(orderData.status)}`;
+
+                    // Display order items
+                    displayOrderItems(orderData.items || []);
+
+                    // Show M-Pesa instructions if payment is pending
+                    if (orderData.payment_status === 'pending' && orderData.payment_method === 'mpesa') {
+                        document.getElementById('mpesaInstructions').style.display = 'block';
+                        document.getElementById('mpesaAccountNumber').textContent = orderData.order_number;
+                        document.getElementById('mpesaAmount').textContent = formatCurrency(orderData.total_amount);
+                    }
+
+                    // Display tracking timeline
+                    displayTrackingTimeline(orderData.status);
+
+                    // Hide loading, show order details
+                    document.getElementById('orderLoading').style.display = 'none';
+                    document.getElementById('orderDetails').style.display = 'block';
+
+                    // Start auto-refresh for pending orders
+                    if (orderData.status === 'pending' || orderData.payment_status === 'pending') {
+                        startOrderTracking(orderId);
+                    }
+
+                } else {
+                    throw new Error('Failed to load order details');
+                }
+            } catch (error) {
+                console.error('Error loading order:', error);
+                document.getElementById('orderLoading').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Failed to load order details. Please try again later or contact support.
+                    </div>
+                `;
+            }
+        }
+
+        // Display order items
+        function displayOrderItems(items) {
+            const orderItemsContainer = document.getElementById('orderItems');
+
+            if (!items || items.length === 0) {
+                orderItemsContainer.innerHTML = '<p class="text-muted">No items found</p>';
+                return;
+            }
+
+            orderItemsContainer.innerHTML = items.map(item => `
+                <div class="d-flex align-items-center mb-3 p-3 border rounded">
+                    <img src="${item.image || 'Img/Vehicle.jpeg'}"
+                         alt="${item.product_name}"
+                         class="rounded me-3"
+                         style="width: 60px; height: 60px; object-fit: cover;">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${item.product_name}</h6>
+                        <small class="text-muted">Quantity: ${item.quantity}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold">${formatCurrency(item.product_price * item.quantity)}</div>
+                        <small class="text-muted">${formatCurrency(item.product_price)} each</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Display tracking timeline
+        function displayTrackingTimeline(currentStatus) {
+            const trackingItems = document.getElementById('trackingItems');
+            const statuses = [
+                { status: 'pending', label: 'Order Placed', desc: 'Your order has been received' },
+                { status: 'confirmed', label: 'Order Confirmed', desc: 'Payment verified and order confirmed' },
+                { status: 'processing', label: 'Processing', desc: 'Preparing your items for shipment' },
+                { status: 'shipped', label: 'Shipped', desc: 'Your order is on the way' },
+                { status: 'delivered', label: 'Delivered', desc: 'Order delivered successfully' }
+            ];
+
+            trackingItems.innerHTML = statuses.map(status => `
+                <div class="tracking-item ${getTrackingItemClass(status.status, currentStatus)}">
+                    <div class="d-flex align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">${status.label}</h6>
+                            <p class="text-muted small mb-0">${status.desc}</p>
+                        </div>
+                        <small class="text-muted">${getTrackingTime(status.status, currentStatus)}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Get tracking item class
+        function getTrackingItemClass(status, currentStatus) {
+            if (status === currentStatus) return 'active';
+            if (isStatusBefore(status, currentStatus)) return 'completed';
+            return '';
+        }
+
+        // Check if status is before current status
+        function isStatusBefore(status, currentStatus) {
+            const statusOrder = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
+            return statusOrder.indexOf(status) < statusOrder.indexOf(currentStatus);
+        }
+
+        // Get tracking time
+        function getTrackingTime(status, currentStatus) {
+            if (status === currentStatus) return 'Current';
+            if (isStatusBefore(status, currentStatus)) return 'Completed';
+            return 'Pending';
+        }
+
+        // Start order tracking (auto-refresh)
+        function startOrderTracking(orderId) {
+            setInterval(async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`/api/orders/${orderId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const updatedOrder = await response.json();
+
+                        // Update status badge
+                        const statusBadge = document.getElementById('orderStatus');
+                        statusBadge.textContent = updatedOrder.status.charAt(0).toUpperCase() + updatedOrder.status.slice(1);
+                        statusBadge.className = `status-badge ${getStatusBadgeClass(updatedOrder.status)}`;
+
+                        // Update tracking timeline
+                        displayTrackingTimeline(updatedOrder.status);
+
+                        // Hide M-Pesa instructions if payment is completed
+                        if (updatedOrder.payment_status === 'completed') {
+                            document.getElementById('mpesaInstructions').style.display = 'none';
+                        }
+
+                        // Stop tracking if order is delivered or cancelled
+                        if (['delivered', 'cancelled'].includes(updatedOrder.status)) {
+                            clearInterval();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error refreshing order status:', error);
+                }
+            }, 10000); // Refresh every 10 seconds
+        }
+
+        // Load order details when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrderDetails();
+        });
+    </script>
 </body>
 </html>

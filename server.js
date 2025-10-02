@@ -12,6 +12,7 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -153,6 +154,324 @@ const emailConfig = {
 
 // Create email transporter
 const transporter = nodemailer.createTransport(emailConfig);
+
+// M-Pesa configuration
+const mpesaConfig = {
+  consumerKey: process.env.MPESA_CONSUMER_KEY || 'your_consumer_key',
+  consumerSecret: process.env.MPESA_CONSUMER_SECRET || 'your_consumer_secret',
+  shortcode: process.env.MPESA_SHORTCODE || '174379', // Default sandbox shortcode
+  passkey: process.env.MPESA_PASSKEY || 'your_passkey',
+  baseUrl: process.env.MPESA_ENV === 'production'
+    ? 'https://api.safaricom.co.ke'
+    : 'https://sandbox.safaricom.co.ke',
+  callbackUrl: process.env.MPESA_CALLBACK_URL || 'https://your-domain.com/api/mpesa/callback'
+};
+
+// M-Pesa API functions
+async function getMpesaAccessToken() {
+  try {
+    const auth = Buffer.from(`${mpesaConfig.consumerKey}:${mpesaConfig.consumerSecret}`).toString('base64');
+
+    const response = await axios.get(`${mpesaConfig.baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
+      headers: {
+        'Authorization': `Basic ${auth}`
+      }
+    });
+
+    return response.data.access_token;
+  } catch (error) {
+    console.error('Error getting M-Pesa access token:', error.response?.data || error.message);
+    throw new Error('Failed to get M-Pesa access token');
+  }
+}
+
+async function initiateMpesaSTKPush(phoneNumber, amount, accountReference, transactionDesc) {
+  try {
+    const accessToken = await getMpesaAccessToken();
+    const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
+    const password = Buffer.from(`${mpesaConfig.shortcode}${mpesaConfig.passkey}${timestamp}`).toString('base64');
+
+    const stkPushData = {
+      BusinessShortCode: mpesaConfig.shortcode,
+      Password: password,
+      Timestamp: timestamp,
+      TransactionType: 'CustomerPayBillOnline',
+      Amount: Math.round(amount),
+      PartyA: phoneNumber,
+      PartyB: mpesaConfig.shortcode,
+      PhoneNumber: phoneNumber,
+      CallBackURL: mpesaConfig.callbackUrl,
+      AccountReference: accountReference,
+      TransactionDesc: transactionDesc
+    };
+
+    const response = await axios.post(`${mpesaConfig.baseUrl}/mpesa/stkpush/v1/processrequest`,
+      stkPushData,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return {
+      success: true,
+      responseCode: response.data.ResponseCode,
+      checkoutRequestId: response.data.CheckoutRequestID,
+      responseDescription: response.data.CustomerMessage
+    };
+  } catch (error) {
+    console.error('Error initiating M-Pesa STK Push:', error.response?.data || error.message);
+    return {
+      success: false,
+      error: error.response?.data?.CustomerMessage || 'Payment initiation failed'
+    };
+  }
+}
+
+async function queryMpesaPayment(checkoutRequestId) {
+  try {
+    const accessToken = await getMpesaAccessToken();
+    const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
+    const password = Buffer.from(`${mpesaConfig.shortcode}${mpesaConfig.passkey}${timestamp}`).toString('base64');
+
+    const queryData = {
+      BusinessShortCode: mpesaConfig.shortcode,
+      Password: password,
+      Timestamp: timestamp,
+      CheckoutRequestID: checkoutRequestId
+    };
+
+    const response = await axios.post(`${mpesaConfig.baseUrl}/mpesa/stkpushquery/v1/query`,
+      queryData,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return {
+      success: true,
+      resultCode: response.data.ResultCode,
+      resultDesc: response.data.ResultDesc,
+      callbackMetadata: response.data.CallbackMetadata
+    };
+  } catch (error) {
+    console.error('Error querying M-Pesa payment:', error.response?.data || error.message);
+    return {
+      success: false,
+      error: 'Payment query failed'
+    };
+  }
+}
+
+// Email notification functions for orders
+async function sendOrderConfirmationEmail(orderData, userEmail, userName) {
+  try {
+    const orderItems = orderData.items || [];
+    const itemsHtml = orderItems.map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">
+          <img src="${item.image || 'Img/Vehicle.jpeg'}" alt="${item.product_name}"
+               style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; margin-right: 10px;">
+          ${item.product_name}
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(item.product_price)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">${formatCurrency(item.product_price * item.quantity)}</td>
+      </tr>
+    `).join('');
+
+    const mailOptions = {
+      from: `"HIRE-ME" <${emailConfig.auth.user}>`,
+      to: userEmail,
+      subject: `Order Confirmation - ${orderData.order_number}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;"><i class="fas fa-tools"></i> HIRE-ME</h1>
+            <p style="margin: 10px 0 0 0;">Equipment & Service Rental Platform</p>
+          </div>
+
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Order Confirmed!</h2>
+
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+              Hi ${userName}, thank you for your order! We've received your order and are preparing it for shipment.
+            </p>
+
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #1f2937; margin-bottom: 15px; font-size: 18px;">Order Details</h3>
+              <p><strong>Order Number:</strong> ${orderData.order_number}</p>
+              <p><strong>Order Date:</strong> ${formatDate(orderData.created_at)}</p>
+              <p><strong>Total Amount:</strong> ${formatCurrency(orderData.total_amount)}</p>
+              <p><strong>Payment Method:</strong> ${orderData.payment_method || 'M-Pesa'}</p>
+              <p><strong>Status:</strong> <span style="color: #059669; font-weight: 600;">${orderData.status.charAt(0).toUpperCase() + orderData.status.slice(1)}</span></p>
+            </div>
+
+            <h3 style="color: #1f2937; margin-bottom: 15px;">Order Items</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              <thead>
+                <tr style="background: #f3f4f6;">
+                  <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e5e7eb;">Item</th>
+                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #e5e7eb;">Qty</th>
+                  <th style="padding: 10px; text-align: right; border-bottom: 2px solid #e5e7eb;">Price</th>
+                  <th style="padding: 10px; text-align: right; border-bottom: 2px solid #e5e7eb;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+                <tr style="background: #f8fafc; font-weight: 600;">
+                  <td colspan="3" style="padding: 15px; text-align: right;">Total Amount:</td>
+                  <td style="padding: 15px; text-align: right; color: #2563eb;">${formatCurrency(orderData.total_amount)}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            ${orderData.payment_method === 'mpesa' && orderData.payment_status === 'pending' ? `
+              <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h4 style="color: #0ea5e9; margin-bottom: 15px;">
+                  <i class="fas fa-mobile-alt me-2"></i>Complete Your Payment
+                </h4>
+                <p style="margin-bottom: 10px;"><strong>Pay Bill Number:</strong> 174379</p>
+                <p style="margin-bottom: 10px;"><strong>Account Number:</strong> ${orderData.order_number}</p>
+                <p style="margin-bottom: 0;"><strong>Amount:</strong> ${formatCurrency(orderData.total_amount)}</p>
+              </div>
+            ` : ''}
+
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 5px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #92400e; font-size: 14px;">
+                <strong>Need Help?</strong> Contact our support team if you have any questions about your order.
+              </p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.APP_URL || 'http://localhost:3000'}/confirmation.html?orderId=${orderData.id}"
+                 style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                Track Your Order
+              </a>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">
+              Thank you for choosing HIRE-ME! We appreciate your business.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Order confirmation email sent to ${userEmail}: ${result.messageId}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending order confirmation email:', error);
+    return false;
+  }
+}
+
+async function sendOrderStatusUpdateEmail(orderData, userEmail, userName, oldStatus) {
+  try {
+    const statusMessages = {
+      'confirmed': {
+        title: 'Order Confirmed',
+        message: 'Great news! Your payment has been verified and your order is now confirmed.',
+        color: '#2563eb'
+      },
+      'processing': {
+        title: 'Order Processing',
+        message: 'Your order is now being processed. We\'re preparing your items for shipment.',
+        color: '#8b4513'
+      },
+      'shipped': {
+        title: 'Order Shipped',
+        message: 'Your order has been shipped! You should receive it within the next few days.',
+        color: '#059669'
+      },
+      'delivered': {
+        title: 'Order Delivered',
+        message: 'Your order has been delivered successfully! Thank you for choosing HIRE-ME.',
+        color: '#4b5563'
+      }
+    };
+
+    const statusInfo = statusMessages[orderData.status];
+    if (!statusInfo) return false;
+
+    const mailOptions = {
+      from: `"HIRE-ME" <${emailConfig.auth.user}>`,
+      to: userEmail,
+      subject: `Order Update - ${orderData.order_number} (${statusInfo.title})`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;"><i class="fas fa-tools"></i> HIRE-ME</h1>
+            <p style="margin: 10px 0 0 0;">Equipment & Service Rental Platform</p>
+          </div>
+
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h2 style="color: ${statusInfo.color}; margin-bottom: 10px;">${statusInfo.title}</h2>
+              <p style="color: #4b5563; font-size: 16px; margin-bottom: 0;">${statusInfo.message}</p>
+            </div>
+
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #1f2937; margin-bottom: 15px; font-size: 18px;">Order Information</h3>
+              <p><strong>Order Number:</strong> ${orderData.order_number}</p>
+              <p><strong>Status:</strong> <span style="color: ${statusInfo.color}; font-weight: 600;">${orderData.status.charAt(0).toUpperCase() + orderData.status.slice(1)}</span></p>
+              <p><strong>Total Amount:</strong> ${formatCurrency(orderData.total_amount)}</p>
+              <p><strong>Last Updated:</strong> ${formatDate(orderData.updated_at)}</p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.APP_URL || 'http://localhost:3000'}/confirmation.html?orderId=${orderData.id}"
+                 style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                View Order Details
+              </a>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">
+              You're receiving this email because you placed an order with HIRE-ME.
+              You can manage your notification preferences in your account settings.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Order status update email sent to ${userEmail}: ${result.messageId}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending order status update email:', error);
+    return false;
+  }
+}
+
+// Helper function to format currency in emails
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency: 'KES'
+  }).format(amount);
+}
+
+// Helper function to format date in emails
+function formatDate(dateString) {
+  return new Date(dateString).toLocaleDateString('en-KE', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
 
 // Email service functions
 async function sendVerificationEmail(email, name, verificationToken) {
@@ -393,6 +712,37 @@ const db = new sqlite3.Database('./hire-me.db', (err) => {
       quantity INTEGER DEFAULT 1,
       added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id),
+      FOREIGN KEY (product_id) REFERENCES products (id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      order_number TEXT UNIQUE,
+      status TEXT DEFAULT 'pending',
+      total_amount REAL,
+      payment_method TEXT,
+      payment_status TEXT DEFAULT 'pending',
+      payment_reference TEXT,
+      shipping_address TEXT,
+      contact_phone TEXT,
+      contact_email TEXT,
+      order_notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS order_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER,
+      product_id INTEGER,
+      product_name TEXT,
+      product_price REAL,
+      quantity INTEGER,
+      subtotal REAL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (order_id) REFERENCES orders (id),
       FOREIGN KEY (product_id) REFERENCES products (id)
     )`);
 
@@ -922,6 +1272,661 @@ app.post('/api/reset-password', async (req, res) => {
     console.error('Password reset error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+});
+
+// Order Management Endpoints
+
+// Create new order from cart
+app.post('/api/orders', requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  const { paymentMethod, shippingAddress, contactPhone, contactEmail, orderNotes } = req.body;
+
+  if (!paymentMethod || !shippingAddress || !contactPhone || !contactEmail) {
+    return res.status(400).json({ message: 'Missing required order information' });
+  }
+
+  try {
+    // Get user's cart items
+    const cartQuery = `
+      SELECT c.quantity, p.name, p.price, p.image, p.location
+      FROM cart c
+      JOIN products p ON c.product_id = p.id
+      WHERE c.user_id = ?
+    `;
+
+    db.all(cartQuery, [userId], (err, cartItems) => {
+      if (err) {
+        console.error('Error fetching cart:', err);
+        return res.status(500).json({ message: 'Server error' });
+      }
+
+      if (cartItems.length === 0) {
+        return res.status(400).json({ message: 'Cart is empty' });
+      }
+
+      // Calculate total
+      const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+      // Generate order number
+      const orderNumber = 'ORD-' + Date.now() + Math.random().toString(36).substr(2, 4).toUpperCase();
+
+      // Create order
+      db.run(`INSERT INTO orders (user_id, order_number, total_amount, payment_method, payment_status,
+        shipping_address, contact_phone, contact_email, order_notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, orderNumber, totalAmount, paymentMethod, 'pending', shippingAddress,
+         contactPhone, contactEmail, orderNotes || ''],
+        function(err) {
+          if (err) {
+            console.error('Error creating order:', err);
+            return res.status(500).json({ message: 'Server error' });
+          }
+
+          const orderId = this.lastID;
+
+          // Add order items and clear cart
+          const insertPromises = cartItems.map(item => {
+            return new Promise((resolve, reject) => {
+              const subtotal = item.price * item.quantity;
+              db.run(`INSERT INTO order_items (order_id, product_id, product_name, product_price, quantity, subtotal)
+                VALUES (?, ?, ?, ?, ?, ?)`,
+                [orderId, item.product_id || null, item.name, item.price, item.quantity, subtotal],
+                function(err) {
+                  if (err) reject(err);
+                  else resolve();
+                });
+            });
+          });
+
+          // Clear cart after adding items
+          Promise.all(insertPromises).then(() => {
+            db.run('DELETE FROM cart WHERE user_id = ?', [userId], (cartErr) => {
+              if (cartErr) {
+                console.error('Error clearing cart:', cartErr);
+              }
+
+              console.log(`Order created: ${orderNumber} for user ${userId}`);
+
+              // Send order confirmation email
+              setTimeout(async () => {
+                try {
+                  const userQuery = 'SELECT name, email FROM users WHERE id = ?';
+                  db.get(userQuery, [userId], async (err, user) => {
+                    if (!err && user) {
+                      const orderWithItems = {
+                        ...order,
+                        id: orderId,
+                        order_number: orderNumber,
+                        total_amount: totalAmount,
+                        items: cartItems
+                      };
+                      await sendOrderConfirmationEmail(orderWithItems, user.email, user.name);
+                    }
+                  });
+                } catch (emailErr) {
+                  console.error('Error sending order confirmation email:', emailErr);
+                }
+              }, 1000); // Delay to ensure order is fully created
+
+              res.status(201).json({
+                message: 'Order created successfully',
+                orderId: orderId,
+                orderNumber: orderNumber,
+                totalAmount: totalAmount,
+                status: 'pending'
+              });
+            });
+          }).catch(itemErr => {
+            console.error('Error adding order items:', itemErr);
+            res.status(500).json({ message: 'Server error' });
+          });
+        });
+    });
+  } catch (error) {
+    console.error('Order creation error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get user's orders
+app.get('/api/orders', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+
+  const query = `
+    SELECT o.id, o.order_number, o.status, o.total_amount, o.payment_status,
+           o.created_at, o.updated_at,
+           COUNT(oi.id) as item_count
+    FROM orders o
+    LEFT JOIN order_items oi ON o.id = oi.order_id
+    WHERE o.user_id = ?
+    GROUP BY o.id
+    ORDER BY o.created_at DESC
+  `;
+
+  db.all(query, [userId], (err, orders) => {
+    if (err) {
+      console.error('Error fetching orders:', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    res.json(orders);
+  });
+});
+
+// Get specific order details
+app.get('/api/orders/:id', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  const orderId = req.params.id;
+
+  // Get order details
+  const orderQuery = `
+    SELECT o.*, u.name as customer_name, u.email as customer_email
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    WHERE o.id = ? AND o.user_id = ?
+  `;
+
+  db.get(orderQuery, [orderId, userId], (err, order) => {
+    if (err) {
+      console.error('Error fetching order:', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Get order items
+    const itemsQuery = `
+      SELECT oi.*, p.image, p.description
+      FROM order_items oi
+      LEFT JOIN products p ON oi.product_name = p.name
+      WHERE oi.order_id = ?
+    `;
+
+    db.all(itemsQuery, [orderId], (itemsErr, items) => {
+      if (itemsErr) {
+        console.error('Error fetching order items:', itemsErr);
+        return res.status(500).json({ message: 'Server error' });
+      }
+
+      res.json({
+        ...order,
+        items: items
+      });
+    });
+  });
+});
+
+// Cancel order (customer)
+app.post('/api/orders/:id/cancel', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  const orderId = req.params.id;
+
+  // Check if order can be cancelled (only pending orders)
+  db.get('SELECT status FROM orders WHERE id = ? AND user_id = ?', [orderId, userId], (err, order) => {
+    if (err) {
+      console.error('Error fetching order:', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(400).json({ message: 'Only pending orders can be cancelled' });
+    }
+
+    // Update order status to cancelled
+    db.run(`UPDATE orders SET status = 'cancelled', updated_at = datetime('now')
+      WHERE id = ? AND user_id = ?`, [orderId, userId], function(updateErr) {
+        if (updateErr) {
+          console.error('Error cancelling order:', updateErr);
+          return res.status(500).json({ message: 'Server error' });
+        }
+
+        console.log(`Order cancelled: ${orderId} by user ${userId}`);
+        res.json({ message: 'Order cancelled successfully' });
+      });
+  });
+});
+
+// Admin: Update order status
+app.put('/api/admin/orders/:id/status', requireAuth, (req, res) => {
+  const orderId = req.params.id;
+  const { status, adminNotes } = req.body;
+
+  if (!status) {
+    return res.status(400).json({ message: 'Status is required' });
+  }
+
+  const validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ message: 'Invalid status' });
+  }
+
+  // Get current order status for comparison
+  db.get('SELECT o.*, u.name, u.email FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?',
+    [orderId], (err, currentOrder) => {
+      if (err) {
+        console.error('Error fetching current order:', err);
+        return res.status(500).json({ message: 'Server error' });
+      }
+
+      if (!currentOrder) {
+        return res.status(404).json({ message: 'Order not found' });
+      }
+
+      // Update order status
+      db.run(`UPDATE orders SET status = ?, updated_at = datetime('now')
+        WHERE id = ?`, [status, orderId], function(err) {
+          if (err) {
+            console.error('Error updating order status:', err);
+            return res.status(500).json({ message: 'Server error' });
+          }
+
+          if (this.changes === 0) {
+            return res.status(404).json({ message: 'Order not found' });
+          }
+
+          console.log(`Order ${orderId} status updated to ${status}`);
+
+          // Send status update email if status changed and email is configured
+          if (status !== currentOrder.status && emailConfig.auth.user !== 'your-email@gmail.com') {
+            setTimeout(async () => {
+              try {
+                const updatedOrder = { ...currentOrder, status: status };
+                await sendOrderStatusUpdateEmail(updatedOrder, currentOrder.email, currentOrder.name, currentOrder.status);
+              } catch (emailErr) {
+                console.error('Error sending status update email:', emailErr);
+              }
+            }, 500);
+          }
+
+          res.json({ message: 'Order status updated successfully' });
+        });
+    });
+});
+
+// Admin: Get all orders (for admin dashboard)
+app.get('/api/admin/orders', requireAuth, (req, res) => {
+  const query = `
+    SELECT o.*, u.name as customer_name, u.email as customer_email,
+           COUNT(oi.id) as item_count
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    LEFT JOIN order_items oi ON o.id = oi.order_id
+    GROUP BY o.id
+    ORDER BY o.created_at DESC
+  `;
+
+  db.all(query, [], (err, orders) => {
+    if (err) {
+      console.error('Error fetching orders:', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    res.json(orders);
+  });
+});
+
+// M-Pesa Payment Endpoints
+
+// Initiate M-Pesa payment
+app.post('/api/mpesa/stkpush', requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  const { phoneNumber, amount, orderId } = req.body;
+
+  if (!phoneNumber || !amount || !orderId) {
+    return res.status(400).json({ message: 'Phone number, amount, and order ID are required' });
+  }
+
+  // Validate phone number format (Kenyan format)
+  const kenyaPhoneRegex = /^(\+254|254|0)[17]\d{8}$/;
+  if (!kenyaPhoneRegex.test(phoneNumber)) {
+    return res.status(400).json({ message: 'Please provide a valid Kenyan phone number' });
+  }
+
+  // Format phone number to international format
+  let formattedPhone = phoneNumber;
+  if (phoneNumber.startsWith('0')) {
+    formattedPhone = '+254' + phoneNumber.substring(1);
+  } else if (phoneNumber.startsWith('254')) {
+    formattedPhone = '+' + phoneNumber;
+  }
+
+  try {
+    // Verify order belongs to user
+    db.get('SELECT order_number, total_amount FROM orders WHERE id = ? AND user_id = ?',
+      [orderId, userId], async (err, order) => {
+        if (err) {
+          console.error('Database error:', err);
+          return res.status(500).json({ message: 'Server error' });
+        }
+
+        if (!order) {
+          return res.status(404).json({ message: 'Order not found' });
+        }
+
+        if (Math.abs(parseFloat(order.total_amount) - parseFloat(amount)) > 0.01) {
+          return res.status(400).json({ message: 'Amount does not match order total' });
+        }
+
+        // Initiate M-Pesa STK Push
+        const result = await initiateMpesaSTKPush(
+          formattedPhone,
+          amount,
+          order.order_number,
+          `Payment for order ${order.order_number}`
+        );
+
+        if (result.success) {
+          // Update order with payment reference
+          db.run(`UPDATE orders SET payment_reference = ?, updated_at = datetime('now')
+            WHERE id = ?`, [result.checkoutRequestId, orderId], (updateErr) => {
+              if (updateErr) {
+                console.error('Error updating order payment reference:', updateErr);
+              }
+            });
+
+          res.json({
+            message: 'M-Pesa payment request sent successfully',
+            checkoutRequestId: result.checkoutRequestId,
+            responseDescription: result.responseDescription
+          });
+        } else {
+          res.status(400).json({
+            message: result.error || 'Failed to initiate M-Pesa payment'
+          });
+        }
+      });
+  } catch (error) {
+    console.error('M-Pesa payment error:', error);
+    res.status(500).json({ message: 'Payment processing error' });
+  }
+});
+
+// M-Pesa payment callback (webhook)
+app.post('/api/mpesa/callback', (req, res) => {
+  const callbackData = req.body;
+
+  console.log('M-Pesa callback received:', JSON.stringify(callbackData, null, 2));
+
+  // Handle different callback types
+  if (callbackData.Body && callbackData.Body.stkCallback) {
+    const stkCallback = callbackData.Body.stkCallback;
+    const checkoutRequestId = stkCallback.CheckoutRequestID;
+    const resultCode = stkCallback.ResultCode;
+
+    if (resultCode === 0) {
+      // Payment successful
+      const callbackMetadata = stkCallback.CallbackMetadata;
+      const amount = callbackMetadata.Item.find(item => item.Name === 'Amount')?.Value;
+      const mpesaReceiptNumber = callbackMetadata.Item.find(item => item.Name === 'MpesaReceiptNumber')?.Value;
+      const phoneNumber = callbackMetadata.Item.find(item => item.Name === 'PhoneNumber')?.Value;
+
+      console.log(`Payment successful: ${mpesaReceiptNumber} for amount ${amount}`);
+
+      // Update order payment status
+      db.run(`UPDATE orders SET payment_status = 'completed', payment_reference = ?,
+        updated_at = datetime('now') WHERE payment_reference = ?`,
+        [mpesaReceiptNumber, checkoutRequestId], (err) => {
+          if (err) {
+            console.error('Error updating payment status:', err);
+          } else {
+            console.log(`Payment status updated for checkout request: ${checkoutRequestId}`);
+          }
+        });
+
+    } else {
+      // Payment failed or cancelled
+      const resultDesc = stkCallback.ResultDesc;
+      console.log(`Payment failed: ${resultDesc} for checkout request: ${checkoutRequestId}`);
+
+      // Update order payment status to failed
+      db.run(`UPDATE orders SET payment_status = 'failed', updated_at = datetime('now')
+        WHERE payment_reference = ?`, [checkoutRequestId], (err) => {
+          if (err) {
+            console.error('Error updating payment status:', err);
+          }
+        });
+    }
+  }
+
+  // Always respond with success to M-Pesa
+  res.json({ message: 'Callback received successfully' });
+});
+
+// Query M-Pesa payment status
+app.post('/api/mpesa/query', requireAuth, async (req, res) => {
+  const { checkoutRequestId } = req.body;
+
+  if (!checkoutRequestId) {
+    return res.status(400).json({ message: 'Checkout request ID is required' });
+  }
+
+  try {
+    const result = await queryMpesaPayment(checkoutRequestId);
+
+    if (result.success) {
+      let paymentStatus = 'pending';
+
+      if (result.resultCode === '0') {
+        paymentStatus = 'completed';
+      } else if (result.resultCode === '1032') {
+        paymentStatus = 'cancelled';
+      } else if (result.resultCode === '1') {
+        paymentStatus = 'failed';
+      }
+
+      // Update order status if payment is completed
+      if (paymentStatus === 'completed') {
+        db.run(`UPDATE orders SET payment_status = 'completed', updated_at = datetime('now')
+          WHERE payment_reference = ?`, [checkoutRequestId], (err) => {
+            if (err) {
+              console.error('Error updating payment status:', err);
+            }
+          });
+      }
+
+      res.json({
+        status: paymentStatus,
+        resultCode: result.resultCode,
+        resultDescription: result.resultDesc
+      });
+    } else {
+      res.status(400).json({ message: result.error });
+    }
+  } catch (error) {
+    console.error('Payment query error:', error);
+    res.status(500).json({ message: 'Payment query failed' });
+  }
+});
+
+// Analytics and Reporting Endpoints
+
+// Get order analytics
+app.get('/api/admin/analytics', requireAuth, (req, res) => {
+  const queries = {
+    // Order status distribution
+    statusDistribution: `
+      SELECT status, COUNT(*) as count
+      FROM orders
+      GROUP BY status
+    `,
+
+    // Monthly revenue for last 12 months
+    monthlyRevenue: `
+      SELECT
+        strftime('%Y-%m', created_at) as month,
+        SUM(total_amount) as revenue,
+        COUNT(*) as order_count
+      FROM orders
+      WHERE created_at >= date('now', '-12 months')
+      GROUP BY strftime('%Y-%m', created_at)
+      ORDER BY month
+    `,
+
+    // Top selling products
+    topProducts: `
+      SELECT
+        oi.product_name,
+        SUM(oi.quantity) as total_quantity,
+        SUM(oi.subtotal) as total_revenue,
+        COUNT(DISTINCT oi.order_id) as order_count
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.status = 'delivered'
+      GROUP BY oi.product_name
+      ORDER BY total_revenue DESC
+      LIMIT 10
+    `,
+
+    // Daily orders for last 30 days
+    dailyOrders: `
+      SELECT
+        date(created_at) as order_date,
+        COUNT(*) as order_count,
+        SUM(total_amount) as daily_revenue
+      FROM orders
+      WHERE created_at >= date('now', '-30 days')
+      GROUP BY date(created_at)
+      ORDER BY order_date
+    `,
+
+    // Payment method distribution
+    paymentMethods: `
+      SELECT
+        payment_method,
+        COUNT(*) as count,
+        SUM(total_amount) as total_amount
+      FROM orders
+      WHERE payment_method IS NOT NULL
+      GROUP BY payment_method
+    `,
+
+    // Customer location distribution
+    locationDistribution: `
+      SELECT
+        u.location,
+        COUNT(DISTINCT o.id) as order_count,
+        SUM(o.total_amount) as total_revenue
+      FROM orders o
+      JOIN users u ON o.user_id = u.id
+      GROUP BY u.location
+      ORDER BY order_count DESC
+    `
+  };
+
+  const results = {};
+
+  // Execute all queries
+  const queryPromises = Object.entries(queries).map(([key, query]) => {
+    return new Promise((resolve, reject) => {
+      db.all(query, [], (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          results[key] = rows;
+          resolve();
+        }
+      });
+    });
+  });
+
+  Promise.all(queryPromises).then(() => {
+    res.json(results);
+  }).catch(err => {
+    console.error('Error fetching analytics:', err);
+    res.status(500).json({ message: 'Server error' });
+  });
+});
+
+// Get revenue analytics
+app.get('/api/admin/revenue', requireAuth, (req, res) => {
+  const { period = '30' } = req.query; // Default to 30 days
+
+  const query = `
+    SELECT
+      SUM(total_amount) as total_revenue,
+      COUNT(*) as total_orders,
+      AVG(total_amount) as average_order_value,
+      COUNT(CASE WHEN status = 'delivered' THEN 1 END) as completed_orders,
+      SUM(CASE WHEN status = 'delivered' THEN total_amount ELSE 0 END) as completed_revenue
+    FROM orders
+    WHERE created_at >= date('now', '-${period} days')
+  `;
+
+  db.get(query, [], (err, row) => {
+    if (err) {
+      console.error('Error fetching revenue analytics:', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    res.json({
+      period: `${period} days`,
+      ...row
+    });
+  });
+});
+
+// Get user registration analytics
+app.get('/api/admin/users', requireAuth, (req, res) => {
+  const queries = {
+    // User registration by month
+    monthlyRegistrations: `
+      SELECT
+        strftime('%Y-%m', created_at) as month,
+        COUNT(*) as registration_count
+      FROM users
+      WHERE created_at >= date('now', '-12 months')
+      GROUP BY strftime('%Y-%m', created_at)
+      ORDER BY month
+    `,
+
+    // User location distribution
+    locationDistribution: `
+      SELECT
+        location,
+        COUNT(*) as user_count
+      FROM users
+      WHERE location IS NOT NULL
+      GROUP BY location
+      ORDER BY user_count DESC
+    `,
+
+    // Total users and verification status
+    userStats: `
+      SELECT
+        COUNT(*) as total_users,
+        COUNT(CASE WHEN email_verified = 1 THEN 1 END) as verified_users,
+        COUNT(CASE WHEN email_verified = 0 THEN 1 END) as unverified_users
+      FROM users
+    `
+  };
+
+  const results = {};
+
+  const queryPromises = Object.entries(queries).map(([key, query]) => {
+    return new Promise((resolve, reject) => {
+      db.all(query, [], (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          results[key] = rows;
+          resolve();
+        }
+      });
+    });
+  });
+
+  Promise.all(queryPromises).then(() => {
+    res.json(results);
+  }).catch(err => {
+    console.error('Error fetching user analytics:', err);
+    res.status(500).json({ message: 'Server error' });
+  });
 });
 
 // Start server
