@@ -1047,7 +1047,40 @@ const db = new sqlite3.Database('./hire-me.db', (err) => {
       category TEXT,
       image TEXT,
       available BOOLEAN DEFAULT 1,
-      location TEXT
+      location TEXT,
+      latitude REAL,
+      longitude REAL,
+      features TEXT, -- JSON string of features
+      rating REAL DEFAULT 0,
+      review_count INTEGER DEFAULT 0,
+      condition TEXT DEFAULT 'good', -- excellent, good, fair
+      minimum_booking INTEGER DEFAULT 1, -- minimum booking days/hours
+      maximum_booking INTEGER DEFAULT 30, -- maximum booking days
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Create search analytics table
+    db.run(`CREATE TABLE IF NOT EXISTS search_analytics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      search_term TEXT,
+      category TEXT,
+      location TEXT,
+      price_min REAL,
+      price_max REAL,
+      user_id INTEGER,
+      results_count INTEGER,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
+    )`);
+
+    // Create product features table for advanced filtering
+    db.run(`CREATE TABLE IF NOT EXISTS product_features (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER,
+      feature_name TEXT,
+      feature_value TEXT,
+      FOREIGN KEY (product_id) REFERENCES products (id)
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS contacts (
@@ -1107,15 +1140,15 @@ const db = new sqlite3.Database('./hire-me.db', (err) => {
       }
       if (row.count === 0) {
         const sampleProducts = [
-          ['Luxury SUV', 'Premium SUV perfect for family trips', 5000, 'vehicles', 'Img/Vehicle.jpeg', 'Nairobi'],
-          ['Professional Sound System', 'Complete audio setup for events', 3000, 'audio', 'Img/sound3.jpeg', 'Nairobi'],
-          ['Construction Tools Set', 'Complete toolkit for construction work', 1500, 'tools', 'Img/House.jpeg', 'Nairobi'],
-          ['Mountain Bike', 'High-quality mountain bike for adventures', 2500, 'sports', 'Img/Bike1.jpeg', 'Nairobi'],
-          ['Cheetah Print Dress', 'Elegant dress with unique design', 1800, 'fashion', 'Img/Cheetah.jpeg', 'Nairobi']
+          ['Luxury SUV', 'Premium SUV perfect for family trips with GPS and AC', 5000, 'vehicles', 'Img/Vehicle.jpeg', 'Nairobi', -1.2864, 36.8172, '["GPS", "AC", "Insurance", "Bluetooth"]', 4.8, 24, 'excellent', 1, 30],
+          ['Professional Sound System', 'Complete audio setup for events with wireless connectivity', 3000, 'audio', 'Img/sound3.jpeg', 'Nairobi', -1.2864, 36.8172, '["Wireless", "Bluetooth", "Battery", "Remote Control"]', 4.6, 18, 'excellent', 1, 14],
+          ['Construction Tools Set', 'Complete toolkit for construction work, heavy duty', 1500, 'tools', 'Img/House.jpeg', 'Nairobi', -1.2864, 36.8172, '["Heavy Duty", "Complete Set", "Storage Case"]', 4.4, 15, 'good', 1, 21],
+          ['Mountain Bike', 'High-quality mountain bike for adventures', 2500, 'sports', 'Img/Bike1.jpeg', 'Nairobi', -1.2864, 36.8172, '["All Terrain", "Gear System", "Comfort Seat"]', 4.7, 22, 'excellent', 1, 14],
+          ['Cheetah Print Dress', 'Elegant dress with unique design', 1800, 'fashion', 'Img/Cheetah.jpeg', 'Nairobi', -1.2864, 36.8172, '["Designer", "Unique Pattern", "Comfortable Fit"]', 4.5, 12, 'excellent', 1, 7]
         ];
 
         sampleProducts.forEach(product => {
-          db.run('INSERT INTO products (name, description, price, category, image, location) VALUES (?, ?, ?, ?, ?, ?)', product);
+          db.run('INSERT INTO products (name, description, price, category, image, location, latitude, longitude, features, rating, review_count, condition, minimum_booking, maximum_booking) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', product);
         });
         console.log('Sample products inserted');
       }
@@ -1322,6 +1355,269 @@ app.get('/api/products/category/:category', (req, res) => {
   });
 });
 
+// Advanced search endpoint
+app.get('/api/products/search', (req, res) => {
+  const {
+    q, // search query
+    category,
+    location,
+    minPrice,
+    maxPrice,
+    rating,
+    condition,
+    features, // comma-separated features
+    sortBy = 'rating', // rating, price, name, date
+    sortOrder = 'desc', // asc, desc
+    limit = 20,
+    offset = 0
+  } = req.query;
+
+  let query = `
+    SELECT *,
+           (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance
+    FROM products
+    WHERE available = 1
+  `;
+
+  const params = [-1.2864, 36.8172, -1.2864]; // Nairobi coordinates as default
+
+  // Add search filters
+  if (q) {
+    query += ' AND (name LIKE ? OR description LIKE ?)';
+    params.push(`%${q}%`, `%${q}%`);
+  }
+
+  if (category) {
+    query += ' AND category = ?';
+    params.push(category);
+  }
+
+  if (location) {
+    query += ' AND location LIKE ?';
+    params.push(`%${location}%`);
+  }
+
+  if (minPrice) {
+    query += ' AND price >= ?';
+    params.push(parseFloat(minPrice));
+  }
+
+  if (maxPrice) {
+    query += ' AND price <= ?';
+    params.push(parseFloat(maxPrice));
+  }
+
+  if (rating) {
+    query += ' AND rating >= ?';
+    params.push(parseFloat(rating));
+  }
+
+  if (condition) {
+    query += ' AND condition = ?';
+    params.push(condition);
+  }
+
+  if (features) {
+    const featureList = features.split(',');
+    featureList.forEach(feature => {
+      query += ' AND features LIKE ?';
+      params.push(`%${feature.trim()}%`);
+    });
+  }
+
+  // Add sorting
+  const validSortFields = ['rating', 'price', 'name', 'created_at', 'distance'];
+  const sortField = validSortFields.includes(sortBy) ? sortBy : 'rating';
+  const order = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+  query += ` ORDER BY ${sortField} ${order}`;
+
+  // Add pagination
+  query += ' LIMIT ? OFFSET ?';
+  params.push(parseInt(limit), parseInt(offset));
+
+  db.all(query, params, (err, rows) => {
+    if (err) {
+      console.error('Search error:', err);
+      return res.status(500).json({ message: 'Search failed' });
+    }
+
+    // Log search analytics
+    if (q || category || location) {
+      const userId = req.session?.userId || null;
+      db.run(`INSERT INTO search_analytics (search_term, category, location, price_min, price_max, user_id, results_count)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [q || null, category || null, location || null, minPrice || null, maxPrice || null, userId, rows.length]);
+    }
+
+    res.json({
+      results: rows,
+      total: rows.length,
+      filters: {
+        query: q,
+        category,
+        location,
+        priceRange: [minPrice, maxPrice],
+        rating,
+        condition,
+        features: features ? features.split(',') : []
+      },
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      }
+    });
+  });
+});
+
+// Get search suggestions
+app.get('/api/search/suggestions', (req, res) => {
+  const { q, limit = 5 } = req.query;
+
+  if (!q || q.length < 2) {
+    return res.json({ suggestions: [] });
+  }
+
+  const query = `
+    SELECT DISTINCT name as suggestion, 'product' as type, COUNT(*) as popularity
+    FROM products
+    WHERE name LIKE ? AND available = 1
+    GROUP BY name
+    ORDER BY popularity DESC, name ASC
+    LIMIT ?
+  `;
+
+  db.all(query, [`%${q}%`, parseInt(limit)], (err, rows) => {
+    if (err) {
+      console.error('Suggestions error:', err);
+      return res.status(500).json({ message: 'Failed to get suggestions' });
+    }
+
+    res.json({
+      suggestions: rows.map(row => ({
+        text: row.suggestion,
+        type: row.type,
+        popularity: row.popularity
+      }))
+    });
+  });
+});
+
+// Get filter options
+app.get('/api/products/filters', (req, res) => {
+  const queries = {
+    categories: 'SELECT DISTINCT category FROM products WHERE available = 1 ORDER BY category',
+    locations: 'SELECT DISTINCT location FROM products WHERE available = 1 ORDER BY location',
+    conditions: 'SELECT DISTINCT condition FROM products WHERE available = 1 ORDER BY condition',
+    priceRange: 'SELECT MIN(price) as min, MAX(price) as max FROM products WHERE available = 1',
+    features: `
+      SELECT DISTINCT json_extract(value, '$') as feature
+      FROM products, json_each('["' || replace(replace(features, '[', ''), ']', '') || '"]')
+      WHERE available = 1 AND features IS NOT NULL
+      ORDER BY feature
+    `
+  };
+
+  const results = {};
+
+  const promises = Object.entries(queries).map(([key, query]) => {
+    return new Promise((resolve, reject) => {
+      db.all(query, [], (err, rows) => {
+        if (err) reject(err);
+        else {
+          if (key === 'priceRange') {
+            results[key] = rows[0] || { min: 0, max: 100000 };
+          } else if (key === 'features') {
+            results[key] = rows.map(row => row.feature.replace(/"/g, '')).filter(f => f);
+          } else {
+            results[key] = rows.map(row => Object.values(row)[0]);
+          }
+          resolve();
+        }
+      });
+    });
+  });
+
+  Promise.all(promises).then(() => {
+    res.json(results);
+  }).catch(err => {
+    console.error('Filters error:', err);
+    res.status(500).json({ message: 'Failed to get filters' });
+  });
+});
+
+// Bulk add to cart endpoint
+app.post('/api/cart/add-multiple', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  const { items } = req.body;
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ message: 'Items array is required' });
+  }
+
+  if (items.length > 20) {
+    return res.status(400).json({ message: 'Cannot add more than 20 items at once' });
+  }
+
+  // Process items sequentially to avoid conflicts
+  const promises = items.map(item => {
+    return new Promise((resolve, reject) => {
+      const { productId, quantity = 1 } = item;
+
+      if (!productId || quantity < 1) {
+        reject(new Error('Invalid item data'));
+        return;
+      }
+
+      // Check if item already in cart
+      db.get('SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ?', [userId, productId], (err, row) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        if (row) {
+          // Update quantity
+          db.run('UPDATE cart SET quantity = quantity + ?, updated_at = datetime("now") WHERE id = ?',
+            [quantity, row.id], function(err) {
+              if (err) reject(err);
+              else resolve({ action: 'updated', productId, newQuantity: row.quantity + quantity });
+            });
+        } else {
+          // Add new item
+          db.run('INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)',
+            [userId, productId, quantity], function(err) {
+              if (err) reject(err);
+              else resolve({ action: 'added', productId, quantity });
+            });
+        }
+      });
+    });
+  });
+
+  Promise.all(promises).then(results => {
+    const added = results.filter(r => r.action === 'added').length;
+    const updated = results.filter(r => r.action === 'updated').length;
+
+    let message = '';
+    if (added > 0 && updated > 0) {
+      message = `Added ${added} new items and updated ${updated} existing items in cart`;
+    } else if (added > 0) {
+      message = `Added ${added} items to cart`;
+    } else if (updated > 0) {
+      message = `Updated ${updated} items in cart`;
+    }
+
+    res.json({
+      message: message,
+      results: results,
+      totalItems: results.length
+    });
+  }).catch(err => {
+    console.error('Bulk cart add error:', err);
+    res.status(500).json({ message: 'Failed to add items to cart' });
+  });
+});
+
 // Add product (for admin)
 app.post('/api/products', (req, res) => {
   const { name, description, price, category, image, location } = req.body;
@@ -1348,7 +1644,6 @@ app.post('/api/contact', (req, res) => {
 
 // Cart functionality
 app.post('/api/cart/add', requireAuth, (req, res) => {
-
   const { productId, quantity = 1 } = req.body;
   const userId = req.session.userId;
 
@@ -1378,6 +1673,74 @@ app.post('/api/cart/add', requireAuth, (req, res) => {
         });
     }
   });
+});
+
+// Add multiple items to cart
+app.post('/api/cart/add-multiple', requireAuth, (req, res) => {
+  const { items } = req.body; // Array of { productId, quantity }
+  const userId = req.session.userId;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ message: 'Items array is required' });
+  }
+
+  // Use Promise.all to handle all database operations
+  const promises = items.map(({ productId, quantity = 1 }) => {
+    return new Promise((resolve) => {
+      // Check if item already in cart
+      db.get('SELECT * FROM cart WHERE user_id = ? AND product_id = ?', [userId, productId], (err, row) => {
+        if (err) {
+          console.error('Error checking cart item:', err);
+          return resolve({ success: false });
+        }
+
+        if (row) {
+          // Update quantity
+          db.run('UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ?',
+            [quantity, userId, productId], function(err) {
+              if (err) {
+                console.error('Error updating cart item:', err);
+                resolve({ success: false });
+              } else {
+                resolve({ success: true });
+              }
+            });
+        } else {
+          // Add new item
+          db.run('INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)',
+            [userId, productId, quantity], function(err) {
+              if (err) {
+                console.error('Error adding to cart:', err);
+                resolve({ success: false });
+              } else {
+                resolve({ success: true });
+              }
+            });
+        }
+      });
+    });
+  });
+
+  // Wait for all operations to complete
+  Promise.all(promises)
+    .then(results => {
+      const successCount = results.filter(r => r.success).length;
+      const errorCount = results.length - successCount;
+      
+      if (successCount > 0) {
+        res.json({ 
+          message: `${successCount} item(s) added to cart${errorCount > 0 ? `, ${errorCount} failed` : ''}`, 
+          successCount, 
+          errorCount 
+        });
+      } else {
+        res.status(500).json({ message: 'Failed to add items to cart', successCount, errorCount });
+      }
+    })
+    .catch(error => {
+      console.error('Error processing multiple cart items:', error);
+      res.status(500).json({ message: 'Failed to add items to cart' });
+    });
 });
 
 app.get('/api/cart', (req, res) => {

@@ -104,17 +104,104 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- Hero Section with Advanced Search -->
     <section id="home" class="hero-section bg-gradient-primary text-white py-5">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6">
                     <h1 class="display-4 fw-bold mb-4">Rent Equipment & Services with Ease</h1>
                     <p class="lead mb-4">Connect with trusted vendors across Kenya for all your rental needs. From vehicles to sound systems, find everything in one place.</p>
-                    <div class="d-flex gap-3">
-                        <button class="btn btn-light btn-lg" id="getStartedBtn">
-                            <i class="fas fa-search me-2"></i>Find Rentals
-                        </button>
+
+                    <!-- Advanced Search Interface -->
+                    <div class="advanced-search-container">
+                        <div class="search-main">
+                            <div class="search-input-group">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" id="searchInput" placeholder="Search for equipment, vehicles, tools..." class="search-input" onkeyup="handleSearchInput(event)">
+                                <div id="searchSuggestions" class="search-suggestions"></div>
+                            </div>
+                            <button onclick="performAdvancedSearch()" class="search-btn">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+
+                        <!-- Advanced Filters Toggle -->
+                        <div class="filters-toggle">
+                            <button onclick="toggleAdvancedFilters()" class="filter-toggle-btn" id="filterToggle">
+                                <i class="fas fa-sliders-h"></i> Advanced Filters
+                                <i class="fas fa-chevron-down toggle-icon"></i>
+                            </button>
+                        </div>
+
+                        <!-- Advanced Filters Panel -->
+                        <div id="advancedFilters" class="advanced-filters" style="display: none;">
+                            <div class="filters-grid">
+                                <!-- Category Filter -->
+                                <div class="filter-group">
+                                    <label class="filter-label">Category</label>
+                                    <select id="categoryFilter" class="filter-select">
+                                        <option value="">All Categories</option>
+                                    </select>
+                                </div>
+
+                                <!-- Location Filter -->
+                                <div class="filter-group">
+                                    <label class="filter-label">Location</label>
+                                    <select id="locationFilter" class="filter-select">
+                                        <option value="">All Locations</option>
+                                    </select>
+                                </div>
+
+                                <!-- Price Range -->
+                                <div class="filter-group">
+                                    <label class="filter-label">Price Range (KES)</label>
+                                    <div class="price-range">
+                                        <input type="number" id="minPrice" placeholder="Min" class="price-input">
+                                        <span class="price-separator">-</span>
+                                        <input type="number" id="maxPrice" placeholder="Max" class="price-input">
+                                    </div>
+                                </div>
+
+                                <!-- Rating Filter -->
+                                <div class="filter-group">
+                                    <label class="filter-label">Minimum Rating</label>
+                                    <select id="ratingFilter" class="filter-select">
+                                        <option value="">Any Rating</option>
+                                        <option value="4.5">4.5+ Stars</option>
+                                        <option value="4">4+ Stars</option>
+                                        <option value="3">3+ Stars</option>
+                                    </select>
+                                </div>
+
+                                <!-- Condition Filter -->
+                                <div class="filter-group">
+                                    <label class="filter-label">Condition</label>
+                                    <select id="conditionFilter" class="filter-select">
+                                        <option value="">Any Condition</option>
+                                        <option value="excellent">Excellent</option>
+                                        <option value="good">Good</option>
+                                        <option value="fair">Fair</option>
+                                    </select>
+                                </div>
+
+                                <!-- Features Filter -->
+                                <div class="filter-group">
+                                    <label class="filter-label">Features</label>
+                                    <div id="featuresFilter" class="features-checkboxes">
+                                        <!-- Features will be loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filter Actions -->
+                            <div class="filter-actions">
+                                <button onclick="clearFilters()" class="btn-secondary">Clear All</button>
+                                <button onclick="applyFilters()" class="btn-primary">Apply Filters</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 mt-4">
                         <button class="btn btn-outline-light btn-lg" id="listServiceBtn">
                             <i class="fas fa-plus me-2"></i>List Your Service
                         </button>

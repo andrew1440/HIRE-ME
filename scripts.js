@@ -342,13 +342,26 @@ async function addToCart(product) {
       body: JSON.stringify({ productId: product.id, quantity: 1 })
     });
 
-    const result = await response.json();
+    let result;
+    try {
+        result = await response.json();
+    } catch (parseError) {
+        console.error('Error parsing response:', parseError);
+        showToast('Failed to process server response. Please try again.', 'error');
+        return;
+    }
 
     if (response.ok) {
       await loadCartFromServer();
       showToast('Item added to cart!', 'success');
     } else {
-      showToast(result.message, 'error');
+      // Handle authentication errors specifically
+      if (response.status === 401) {
+        showToast('Please login to add items to cart', 'warning');
+        openModal('loginModal');
+      } else {
+        showToast(result.message, 'error');
+      }
     }
   } catch (error) {
     showToast('Failed to add item to cart', 'error');
@@ -391,6 +404,12 @@ async function loadCartFromServer() {
     if (response.ok) {
       cart = await response.json();
     } else {
+      // Handle authentication errors specifically
+      if (response.status === 401) {
+        // User is not authenticated, clear currentUser
+        currentUser = null;
+        updateAuthUI();
+      }
       cart = [];
     }
   } catch (error) {
@@ -633,26 +652,39 @@ function loadSampleProducts() {
 
 function displayProducts(products) {
     const container = document.getElementById('featuredProducts');
-    container.innerHTML = products.map(product => `
-        <div class="col-md-4 mb-4">
-            <div class="card product-card h-100">
-                <img src="${product.image || 'Img/Vehicle.jpeg'}" class="card-img-top product-image" alt="${product.name}">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">${product.name}</h5>
-                    <p class="card-text text-muted">${product.description}</p>
-                    <div class="mt-auto">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="h5 text-primary fw-bold">KES ${product.price}</span>
-                            <small class="text-muted">${product.location}</small>
+    container.innerHTML = `
+        <div class="row mb-3">
+            <div class="col-12 d-flex justify-content-end">
+                <button class="btn btn-outline-primary btn-sm me-2" onclick="toggleSelectAll()">
+                    <i class="fas fa-check-square me-1"></i>Select All
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="addSelectedToCart()">
+                    <i class="fas fa-cart-plus me-1"></i>Add Selected (<span id="selectedCount">0</span>)
+                </button>
+            </div>
+        </div>
+        <div class="row g-4">${products.map(product => `
+            <div class="col-md-4 mb-4">
+                <div class="card product-card h-100 position-relative">
+                    <input type="checkbox" class="product-checkbox position-absolute" style="top: 10px; right: 10px; width: 20px; height: 20px;" data-product='${JSON.stringify(product).replace(/'/g, "&#39;")}' onchange="updateSelectedCount()">
+                    <img src="${product.image || 'Img/Vehicle.jpeg'}" class="card-img-top product-image" alt="${product.name}">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">${product.name}</h5>
+                        <p class="card-text text-muted">${product.description}</p>
+                        <div class="mt-auto">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="h5 text-primary fw-bold">KES ${product.price}</span>
+                                <small class="text-muted">${product.location}</small>
+                            </div>
+                            <button class="btn btn-primary w-100" onclick="addToCart(${JSON.stringify(product).replace(/"/g, '"')})">
+                                <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                            </button>
                         </div>
-                        <button class="btn btn-primary w-100" onclick="addToCart(${JSON.stringify(product).replace(/"/g, '"')})">
-                            <i class="fas fa-cart-plus me-2"></i>Add to Cart
-                        </button>
                     </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `).join('')}</div>
+    `;
 }
 
 function viewCategory(category) {
@@ -734,6 +766,16 @@ function displayProductsByCategory(category, products) {
                 <p class="lead text-muted">Browse our selection of ${categoryName.toLowerCase()}</p>
                 <button class="btn btn-outline-primary" onclick="loadFeaturedProducts()">View All Products</button>
             </div>
+            <div class="row mb-3">
+                <div class="col-12 d-flex justify-content-end">
+                    <button class="btn btn-outline-primary btn-sm me-2" onclick="toggleSelectAll()">
+                        <i class="fas fa-check-square me-1"></i>Select All
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="addSelectedToCart()">
+                        <i class="fas fa-cart-plus me-1"></i>Add Selected (<span id="selectedCount">0</span>)
+                    </button>
+                </div>
+            </div>
             <div class="row g-4" id="categoryProducts">
                 <!-- Products will be loaded dynamically -->
             </div>
@@ -744,7 +786,8 @@ function displayProductsByCategory(category, products) {
     const container = document.getElementById('categoryProducts');
     container.innerHTML = products.map(product => `
         <div class="col-md-4 mb-4">
-            <div class="card product-card h-100">
+            <div class="card product-card h-100 position-relative">
+                <input type="checkbox" class="product-checkbox position-absolute" style="top: 10px; right: 10px; width: 20px; height: 20px;" data-product='${JSON.stringify(product).replace(/'/g, "&#39;")}' onchange="updateSelectedCount()">
                 <img src="${product.image || 'Img/Vehicle.jpeg'}" class="card-img-top product-image" alt="${product.name}">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">${product.name}</h5>
@@ -778,6 +821,105 @@ function getCategoryName(category) {
     };
     
     return categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
+}
+
+// Multi-select functionality for products
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+    const count = checkboxes.length;
+    const countElements = document.querySelectorAll('#selectedCount');
+    countElements.forEach(element => {
+        element.textContent = count;
+    });
+}
+
+function toggleSelectAll() {
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+    });
+    
+    updateSelectedCount();
+}
+
+async function addSelectedToCart() {
+    if (!currentUser) {
+        showToast('Please login to add items to cart', 'warning');
+        openModal('loginModal');
+        return;
+    }
+    
+    const selectedCheckboxes = document.querySelectorAll('.product-checkbox:checked');
+    
+    if (selectedCheckboxes.length === 0) {
+        showToast('Please select at least one item to add to cart', 'warning');
+        return;
+    }
+    
+    // Prepare items array for bulk add
+    const items = [];
+    for (const checkbox of selectedCheckboxes) {
+        try {
+            const product = JSON.parse(checkbox.dataset.product);
+            if (product && product.id) {
+                items.push({ productId: product.id, quantity: 1 });
+            } else {
+                console.error('Invalid product data:', checkbox.dataset.product);
+            }
+        } catch (parseError) {
+            console.error('Error parsing product data:', parseError, checkbox.dataset.product);
+        }
+    }
+    
+    if (items.length === 0) {
+        showToast('No valid items to add to cart', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/cart/add-multiple', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ items })
+        });
+        
+        let result;
+        try {
+            result = await response.json();
+        } catch (parseError) {
+            console.error('Error parsing response:', parseError);
+            showToast('Failed to process server response. Please try again.', 'error');
+            return;
+        }
+        
+        if (response.ok) {
+            // Refresh cart
+            await loadCartFromServer();
+            showToast(result.message, 'success');
+        } else {
+            // Handle authentication errors specifically
+            if (response.status === 401) {
+                showToast('Please login to add items to cart', 'warning');
+                openModal('loginModal');
+            } else {
+                showToast(result.message || 'Failed to add items to cart', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Error adding items to cart:', error);
+        showToast('Failed to add items to cart. Please try again.', 'error');
+    }
+    
+    // Clear selections
+    document.querySelectorAll('.product-checkbox:checked').forEach(cb => {
+        cb.checked = false;
+    });
+    updateSelectedCount();
 }
 
 // Utility Functions
@@ -911,3 +1053,337 @@ if ('serviceWorker' in navigator) {
         // Register service worker for offline functionality (future enhancement)
     });
 }
+
+// Advanced Search Variables
+let searchTimeout;
+let currentSearchFilters = {};
+let searchSuggestions = [];
+
+// Advanced Search Functions
+function handleSearchInput(event) {
+    const query = event.target.value.trim();
+
+    if (query.length >= 2) {
+        // Debounce search suggestions
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            loadSearchSuggestions(query);
+        }, 300);
+    } else {
+        hideSearchSuggestions();
+    }
+}
+
+async function loadSearchSuggestions(query) {
+    try {
+        const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        if (data.suggestions && data.suggestions.length > 0) {
+            showSearchSuggestions(data.suggestions);
+        } else {
+            hideSearchSuggestions();
+        }
+    } catch (error) {
+        console.error('Error loading search suggestions:', error);
+        hideSearchSuggestions();
+    }
+}
+
+function showSearchSuggestions(suggestions) {
+    const container = document.getElementById('searchSuggestions');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    suggestions.forEach(suggestion => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.onclick = () => selectSuggestion(suggestion.text);
+
+        item.innerHTML = `
+            <div class="suggestion-text">${highlightMatch(suggestion.text, document.getElementById('searchInput').value)}</div>
+            <div class="suggestion-type">${suggestion.type}</div>
+        `;
+
+        container.appendChild(item);
+    });
+
+    container.style.display = 'block';
+}
+
+function hideSearchSuggestions() {
+    const container = document.getElementById('searchSuggestions');
+    if (container) {
+        container.style.display = 'none';
+    }
+}
+
+function selectSuggestion(text) {
+    document.getElementById('searchInput').value = text;
+    hideSearchSuggestions();
+    performAdvancedSearch();
+}
+
+function highlightMatch(text, query) {
+    if (!query) return text;
+    const regex = new RegExp(`(${query})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+}
+
+function toggleAdvancedFilters() {
+    const filters = document.getElementById('advancedFilters');
+    const toggleBtn = document.getElementById('filterToggle');
+    const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+
+    if (filters.style.display === 'none') {
+        filters.style.display = 'block';
+        toggleIcon.style.transform = 'rotate(180deg)';
+        loadFilterOptions();
+    } else {
+        filters.style.display = 'none';
+        toggleIcon.style.transform = 'rotate(0deg)';
+    }
+}
+
+async function loadFilterOptions() {
+    try {
+        const response = await fetch('/api/products/filters');
+        const filters = await response.json();
+
+        // Populate category filter
+        const categorySelect = document.getElementById('categoryFilter');
+        categorySelect.innerHTML = '<option value="">All Categories</option>';
+        filters.categories.forEach(category => {
+            categorySelect.innerHTML += `<option value="${category}">${category}</option>`;
+        });
+
+        // Populate location filter
+        const locationSelect = document.getElementById('locationFilter');
+        locationSelect.innerHTML = '<option value="">All Locations</option>';
+        filters.locations.forEach(location => {
+            locationSelect.innerHTML += `<option value="${location}">${location}</option>`;
+        });
+
+        // Set price range defaults
+        if (filters.priceRange) {
+            document.getElementById('minPrice').placeholder = filters.priceRange.min;
+            document.getElementById('maxPrice').placeholder = filters.priceRange.max;
+        }
+
+        // Populate features checkboxes
+        const featuresContainer = document.getElementById('featuresFilter');
+        featuresContainer.innerHTML = '';
+        filters.features.forEach(feature => {
+            const checkboxDiv = document.createElement('div');
+            checkboxDiv.className = 'feature-checkbox';
+            checkboxDiv.innerHTML = `
+                <input type="checkbox" id="feature-${feature}" value="${feature}">
+                <label for="feature-${feature}">${feature}</label>
+            `;
+            featuresContainer.appendChild(checkboxDiv);
+        });
+
+    } catch (error) {
+        console.error('Error loading filter options:', error);
+    }
+}
+
+function performAdvancedSearch() {
+    const searchInput = document.getElementById('searchInput').value.trim();
+
+    // Build search filters
+    currentSearchFilters = {
+        q: searchInput,
+        category: document.getElementById('categoryFilter')?.value || '',
+        location: document.getElementById('locationFilter')?.value || '',
+        minPrice: document.getElementById('minPrice')?.value || '',
+        maxPrice: document.getElementById('maxPrice')?.value || '',
+        rating: document.getElementById('ratingFilter')?.value || '',
+        condition: document.getElementById('conditionFilter')?.value || '',
+        features: getSelectedFeatures(),
+        sortBy: 'rating',
+        sortOrder: 'desc',
+        limit: 20,
+        offset: 0
+    };
+
+    // Remove empty filters
+    Object.keys(currentSearchFilters).forEach(key => {
+        if (!currentSearchFilters[key] || currentSearchFilters[key] === '') {
+            delete currentSearchFilters[key];
+        }
+    });
+
+    loadProducts(currentSearchFilters);
+    hideSearchSuggestions();
+}
+
+function getSelectedFeatures() {
+    const checkboxes = document.querySelectorAll('#featuresFilter input[type="checkbox"]:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function applyFilters() {
+    performAdvancedSearch();
+}
+
+function clearFilters() {
+    // Clear all filter inputs
+    document.getElementById('searchInput').value = '';
+    document.getElementById('categoryFilter').selectedIndex = 0;
+    document.getElementById('locationFilter').selectedIndex = 0;
+    document.getElementById('minPrice').value = '';
+    document.getElementById('maxPrice').value = '';
+    document.getElementById('ratingFilter').selectedIndex = 0;
+    document.getElementById('conditionFilter').selectedIndex = 0;
+
+    // Clear feature checkboxes
+    const checkboxes = document.querySelectorAll('#featuresFilter input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = false);
+
+    // Reset search filters
+    currentSearchFilters = {};
+    loadProducts();
+}
+
+// Enhanced product loading with search filters
+async function loadProducts(searchFilters = {}) {
+    try {
+        // Show loading state
+        const productsContainer = document.getElementById('featuredProducts');
+        if (productsContainer) {
+            productsContainer.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div></div>';
+        }
+
+        // Build query string
+        const queryParams = new URLSearchParams(searchFilters);
+        const url = Object.keys(searchFilters).length > 0 ? `/api/products/search?${queryParams}` : '/api/products';
+
+        const response = await fetch(url);
+        const products = await response.json();
+
+        displayProducts(products.results || products);
+
+        // Update search results info
+        if (searchFilters.q || Object.keys(searchFilters).length > 1) {
+            showSearchResultsInfo(products);
+        }
+
+    } catch (error) {
+        console.error('Error loading products:', error);
+        const productsContainer = document.getElementById('featuredProducts');
+        if (productsContainer) {
+            productsContainer.innerHTML = '<div class="alert alert-danger">Failed to load products. Please try again.</div>';
+        }
+    }
+}
+
+function showSearchResultsInfo(products) {
+    const resultsInfo = document.createElement('div');
+    resultsInfo.className = 'search-results-info alert alert-info';
+    resultsInfo.innerHTML = `
+        <i class="fas fa-search me-2"></i>
+        Found ${products.total || products.length} results
+        ${products.filters ? ` for "${products.filters.query || 'your search'}"` : ''}
+        <button onclick="clearFilters()" class="btn btn-sm btn-outline-primary ms-2">Clear filters</button>
+    `;
+
+    const existingInfo = document.querySelector('.search-results-info');
+    if (existingInfo) {
+        existingInfo.remove();
+    }
+
+    const productsSection = document.getElementById('products');
+    if (productsSection) {
+        productsSection.insertBefore(resultsInfo, productsSection.firstChild);
+    }
+}
+
+// Enhanced product display with ratings and features
+function displayProducts(products) {
+    const productsContainer = document.getElementById('featuredProducts');
+    if (!productsContainer) return;
+
+    if (!products || products.length === 0) {
+        productsContainer.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>No products found</h4>
+                <p class="text-muted">Try adjusting your search criteria or browse all products.</p>
+                <button onclick="clearFilters()" class="btn btn-primary">Browse All Products</button>
+            </div>
+        `;
+        return;
+    }
+
+    productsContainer.innerHTML = products.map(product => `
+        <div class="col-md-4 mb-4">
+            <div class="card product-card h-100" onclick="viewProduct(${product.id})">
+                <img src="${product.image}" class="card-img-top product-image" alt="${product.name}">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">${product.name}</h5>
+                        <div class="rating-badge">
+                            ${generateStarRating(product.rating || 0)}
+                            <small class="text-muted">(${product.review_count || 0})</small>
+                        </div>
+                    </div>
+
+                    <p class="card-text text-muted flex-grow-1">${product.description}</p>
+
+                    <div class="product-meta mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-primary">${product.category}</span>
+                            <span class="badge bg-secondary">${product.location}</span>
+                        </div>
+
+                        ${product.condition ? `<span class="badge bg-info">${product.condition}</span>` : ''}
+
+                        ${product.features ? `
+                            <div class="features-preview mt-2">
+                                ${JSON.parse(product.features || '[]').slice(0, 3).map(feature =>
+                                    `<small class="badge bg-light text-dark me-1">${feature}</small>`
+                                ).join('')}
+                                ${JSON.parse(product.features || '[]').length > 3 ? '<small class="text-muted">+more</small>' : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                        <div class="price">
+                            <strong class="text-primary">KES ${product.price.toLocaleString()}</strong>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); addToCart(${JSON.stringify(product).replace(/"/g, '"')})">
+                            <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function generateStarRating(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+    return `
+        <div class="star-rating">
+            ${'★'.repeat(fullStars)}
+            ${hasHalfStar ? '☆' : ''}
+            ${'☆'.repeat(emptyStars)}
+        </div>
+    `;
+}
+
+// Click outside to close suggestions
+document.addEventListener('click', function(event) {
+    const searchContainer = document.querySelector('.search-input-group');
+    const suggestions = document.getElementById('searchSuggestions');
+
+    if (searchContainer && suggestions && !searchContainer.contains(event.target)) {
+        hideSearchSuggestions();
+    }
+});
