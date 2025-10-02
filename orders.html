@@ -404,22 +404,10 @@
 
         // Load orders from API
         async function loadOrders() {
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                document.getElementById('ordersLoading').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Please <a href="login.html">login</a> to view your orders.
-                    </div>
-                `;
-                return;
-            }
-
             try {
                 const response = await fetch('/api/orders', {
+                    credentials: 'same-origin',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -431,7 +419,7 @@
                     document.getElementById('ordersLoading').innerHTML = `
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            Your session has expired. Please <a href="login.html">login</a> again.
+                            Please <a href="login.html">login</a> to view your orders.
                         </div>
                     `;
                 } else {
@@ -525,12 +513,10 @@
 
         // Load order items for specific order
         async function loadOrderItems(orderId) {
-            const token = localStorage.getItem('token');
-
             try {
                 const response = await fetch(`/api/orders/${orderId}`, {
+                    credentials: 'same-origin',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -592,13 +578,11 @@
                 return;
             }
 
-            const token = localStorage.getItem('token');
-
             try {
                 const response = await fetch(`/api/orders/${orderId}/cancel`, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });

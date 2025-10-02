@@ -39,7 +39,8 @@ function initializeApp() {
 function setupEventListeners() {
     // Navigation
     document.getElementById('cartBtn').addEventListener('click', openCartModal);
-    // We'll handle login/register through dedicated pages, but keep the logout listener
+
+    // Logout functionality
     document.getElementById('logoutBtn').addEventListener('click', function(e) {
         e.preventDefault();
         handleLogout();
@@ -66,6 +67,9 @@ function setupEventListeners() {
             });
         }
     });
+
+    // Initialize dropdown functionality after DOM is loaded
+    initializeDropdowns();
 }
 
 // Authentication Functions
@@ -92,6 +96,7 @@ async function handleLogin(e) {
 
         if (response.ok) {
             currentUser = result.user;
+            // Store token for backward compatibility but use session-based auth
             localStorage.setItem('token', result.token);
             showToast('Login successful!', 'success');
             closeModal('loginModal');
@@ -186,11 +191,15 @@ async function handleContact(e) {
 
 async function handleLogout() {
   try {
-    await fetch('/api/logout', { method: 'POST' });
+    await fetch('/api/logout', {
+      method: 'POST',
+      credentials: 'same-origin'
+    });
   } catch (error) {
     console.error('Logout error:', error);
   }
 
+  // Clear both token and session data for compatibility
   localStorage.removeItem('token');
   currentUser = null;
   cart = [];
@@ -200,29 +209,22 @@ async function handleLogout() {
 }
 
 async function checkAuthStatus() {
-  const token = localStorage.getItem('token');
-  if (token) {
-    try {
-      const response = await fetch('/api/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+  try {
+    const response = await fetch('/api/profile', {
+      credentials: 'same-origin'
+    });
 
-      if (response.ok) {
-        currentUser = await response.json();
-        await loadCartFromServer();
-      } else {
-        localStorage.removeItem('token');
-        currentUser = null;
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      localStorage.removeItem('token');
+    if (response.ok) {
+      currentUser = await response.json();
+      await loadCartFromServer();
+    } else {
       currentUser = null;
     }
-    updateAuthUI();
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    currentUser = null;
   }
+  updateAuthUI();
 }
 
 // UI Update Functions
@@ -266,100 +268,40 @@ function updateAuthUI() {
     }
 }
 
-// Enhanced dropdown toggle with better functionality
-function toggleDropdown() {
-    const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
-    const dropdownButton = document.getElementById('userDropdown');
-
-    if (dropdownMenu && dropdownButton) {
-        const isVisible = dropdownMenu.classList.contains('show');
-        console.log('Dropdown toggle called, currently visible:', isVisible);
-
-        if (isVisible) {
-            closeDropdown();
-        } else {
-            openDropdown();
-        }
-    } else {
-        console.error('Dropdown elements not found');
-    }
-}
-
-function openDropdown() {
-    const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
-    const dropdownButton = document.getElementById('userDropdown');
-
-    // Hide other dropdowns first
-    document.querySelectorAll('.dropdown-menu').forEach(menu => {
-        menu.classList.remove('show');
+// Initialize dropdown functionality
+function initializeDropdowns() {
+    // Let Bootstrap handle dropdown functionality
+    const dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+    const dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+        return new bootstrap.Dropdown(dropdownToggleEl);
     });
 
-    // Show this dropdown
-    dropdownMenu.classList.add('show');
-    dropdownButton.setAttribute('aria-expanded', 'true');
+    console.log('Dropdowns initialized:', dropdownList.length);
 
-    // Focus management
-    setTimeout(() => {
-        const firstItem = dropdownMenu.querySelector('.dropdown-item');
-        if (firstItem) firstItem.focus();
-    }, 100);
-}
-
-function closeDropdown() {
-    const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
-    const dropdownButton = document.getElementById('userDropdown');
-
-    dropdownMenu.classList.remove('show');
-    dropdownButton.setAttribute('aria-expanded', 'false');
-    dropdownButton.focus();
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', function(event) {
-    const dropdown = document.getElementById('userMenu');
-    const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
-
-    if (dropdown && dropdownMenu && !dropdown.contains(event.target)) {
-        closeDropdown();
-    }
-});
-
-// Keyboard navigation for dropdown
-document.addEventListener('keydown', function(event) {
-    const dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
-    const dropdownButton = document.getElementById('userDropdown');
-
-    if (dropdownMenu && dropdownMenu.classList.contains('show')) {
-        const items = dropdownMenu.querySelectorAll('.dropdown-item');
-        const currentIndex = Array.from(items).findIndex(item => item === document.activeElement);
-
-        switch (event.key) {
-            case 'Escape':
-                event.preventDefault();
-                closeDropdown();
-                break;
-            case 'ArrowDown':
-                event.preventDefault();
-                const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
-                items[nextIndex].focus();
-                break;
-            case 'ArrowUp':
-                event.preventDefault();
-                const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
-                items[prevIndex].focus();
-                break;
-            case 'Enter':
-                event.preventDefault();
-                if (document.activeElement.classList.contains('dropdown-item')) {
-                    document.activeElement.click();
-                }
-                break;
+    // Ensure dropdowns have proper z-index
+    const style = document.createElement('style');
+    style.textContent = `
+        .dropdown-menu {
+            z-index: 9999 !important;
+            position: absolute !important;
         }
-    } else if (event.key === 'ArrowDown' && document.activeElement === dropdownButton) {
-        event.preventDefault();
-        openDropdown();
-    }
-});
+        .navbar {
+            z-index: 1000 !important;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Add click outside to close dropdowns
+    document.addEventListener('click', function(event) {
+        const dropdowns = document.querySelectorAll('.dropdown-menu.show');
+        dropdowns.forEach(dropdown => {
+            if (!dropdown.closest('.dropdown').contains(event.target)) {
+                const bsDropdown = bootstrap.Dropdown.getInstance(dropdown.previousElementSibling);
+                if (bsDropdown) bsDropdown.hide();
+            }
+        });
+    });
+}
 
 function updateCartUI() {
     const cartCount = document.getElementById('cartCount');
@@ -393,9 +335,9 @@ async function addToCart(product) {
   try {
     const response = await fetch('/api/cart/add', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ productId: product.id, quantity: 1 })
     });
@@ -417,9 +359,7 @@ async function removeFromCart(cartId) {
   try {
     const response = await fetch(`/api/cart/${cartId}`, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      credentials: 'same-origin'
     });
 
     const result = await response.json();
@@ -445,9 +385,7 @@ async function loadCartFromServer() {
 
   try {
     const response = await fetch('/api/cart', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      credentials: 'same-origin'
     });
 
     if (response.ok) {
@@ -546,7 +484,8 @@ function viewOrders() {
         return;
     }
 
-    showToast('Orders feature coming soon!', 'info');
+    // Redirect to orders page
+    window.location.href = 'orders.html';
 }
 
 function viewFavorites() {

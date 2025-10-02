@@ -40,7 +40,7 @@
                         <span class="badge bg-danger ms-1" id="cartCount">0</span>
                     </button>
                     <div class="dropdown" id="userMenu">
-                        <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userDropdown" data-bs-toggle="dropdown" onclick="toggleDropdown()" aria-expanded="false">
+                        <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="user-avatar me-2">
                                 <i class="fas fa-user"></i>
                             </div>
@@ -48,7 +48,7 @@
                                 <div class="user-name" id="userName">Account</div>
                                 <small class="user-status" id="userStatus">Guest</small>
                             </div>
-                            <i class="fas fa-chevron-down ms-2 dropdown-arrow"></i>
+                            <i class="fas fa-chevron-down ms-2"></i>
                         </button>
                         <div class="dropdown-menu user-dropdown-menu" aria-labelledby="userDropdown">
                             <!-- Guest Menu -->
@@ -361,30 +361,5 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="scripts.js"></script>
-    <script>
-        // Ensure Bootstrap dropdowns are initialized
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize all dropdowns
-            var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
-            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
-                return new bootstrap.Dropdown(dropdownToggleEl);
-            });
-
-            console.log('Bootstrap dropdowns initialized:', dropdownList.length);
-
-            // Add debugging for dropdown clicks
-            document.getElementById('userDropdown').addEventListener('click', function(e) {
-                console.log('Dropdown button clicked');
-                var dropdownMenu = document.querySelector('#userMenu .dropdown-menu');
-                console.log('Dropdown menu element:', dropdownMenu);
-                console.log('Dropdown menu classes:', dropdownMenu.classList);
-                console.log('Dropdown menu display:', getComputedStyle(dropdownMenu).display);
-            });
-
-            // Test if Bootstrap is loaded
-            console.log('Bootstrap loaded:', typeof bootstrap !== 'undefined');
-            console.log('Dropdown class available:', typeof bootstrap.Dropdown !== 'undefined');
-        });
-    </script>
 </body>
 </html>

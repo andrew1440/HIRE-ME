@@ -35,32 +35,25 @@ body {
     background: linear-gradient(135deg, var(--primary-color), #1d4ed8) !important;
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    z-index: 1000;
 }
 
-/* Enhanced Dropdown Styles */
+/* Enhanced Dropdown Styles - Compatible with Bootstrap */
 .dropdown-menu {
     border: none;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     border-radius: var(--border-radius);
     margin-top: 0.5rem;
     z-index: 9999 !important;
-    position: absolute;
-    display: none;
     background-color: white;
     min-width: 280px;
-    right: 0;
-    left: auto;
-    top: 100%;
     border: 1px solid #e5e7eb;
     padding: 0;
-}
-
-.dropdown-menu.show {
-    display: block !important;
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
     animation: dropdownFadeIn 0.2s ease-out;
+    position: absolute;
+    transform: none !important;
+    will-change: transform;
 }
 
 .dropdown {
@@ -117,7 +110,7 @@ body {
     transition: transform 0.3s ease;
 }
 
-.dropdown-menu.show ~ .dropdown-toggle .dropdown-arrow {
+.dropdown-toggle.show .dropdown-arrow {
     transform: rotate(180deg);
 }
 
@@ -225,20 +218,26 @@ body {
     }
 }
 
+/* Ensure dropdown appears above all content */
+body {
+    position: relative;
+}
+
+.navbar .dropdown-menu {
+    margin-top: 8px !important;
+    transform: none !important;
+}
+
+/* Fix for any potential z-index conflicts */
+.navbar {
+    position: relative !important;
+    z-index: 1000 !important;
+}
+
 .dropdown-item {
     color: var(--dark-color);
     text-decoration: none;
     display: block;
-    padding: 0.75rem 1rem;
-    transition: all 0.3s ease;
-}
-
-.dropdown-item:hover {
-    background-color: rgba(37, 99, 235, 0.1);
-    color: var(--primary-color);
-}
-
-.dropdown-item {
     padding: 0.75rem 1rem;
     transition: all 0.3s ease;
 }
@@ -285,6 +284,7 @@ body {
     align-items: center;
     position: relative;
     overflow: hidden;
+    z-index: 1;
 }
 
 .hero-section::before {
@@ -466,6 +466,8 @@ footer {
         transform: translateX(-50%);
         min-width: 250px;
         max-width: 90vw;
+        z-index: 9999 !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
     }
 
     .user-profile-header {
