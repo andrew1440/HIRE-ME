@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -45,15 +47,15 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'hire-me-secret-key-change-in-production',
+  secret: process.env.SESSION_SECRET || 'hire-me-secret-key-change-in-production-minimum-32-characters',
   resave: false,
   saveUninitialized: false, // Don't save empty sessions
   rolling: true, // Reset expiration on activity
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    secure: process.env.SECURE_COOKIES === 'true' || process.env.NODE_ENV === 'production', // HTTPS only in production
     httpOnly: true, // Prevent XSS access to cookies
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'strict' // CSRF protection
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' // CSRF protection
   }
 }));
 
@@ -144,12 +146,15 @@ function validateRegistrationInput(name, email, password, phone, location) {
 // Email configuration
 const emailConfig = {
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: process.env.SMTP_PORT || 587,
-  secure: false,
+  port: parseInt(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_SECURE === 'true' || false,
   auth: {
     user: process.env.SMTP_USER || 'your-email@gmail.com',
     pass: process.env.SMTP_PASS || 'your-app-password'
-  }
+  },
+  // Enable debug mode in development
+  debug: process.env.NODE_ENV === 'development',
+  logger: process.env.NODE_ENV === 'development'
 };
 
 // Create email transporter
@@ -157,14 +162,14 @@ const transporter = nodemailer.createTransport(emailConfig);
 
 // M-Pesa configuration
 const mpesaConfig = {
-  consumerKey: process.env.MPESA_CONSUMER_KEY || 'your_consumer_key',
-  consumerSecret: process.env.MPESA_CONSUMER_SECRET || 'your_consumer_secret',
+  consumerKey: process.env.MPESA_CONSUMER_KEY,
+  consumerSecret: process.env.MPESA_CONSUMER_SECRET,
   shortcode: process.env.MPESA_SHORTCODE || '174379', // Default sandbox shortcode
-  passkey: process.env.MPESA_PASSKEY || 'your_passkey',
+  passkey: process.env.MPESA_PASSKEY,
   baseUrl: process.env.MPESA_ENV === 'production'
     ? 'https://api.safaricom.co.ke'
     : 'https://sandbox.safaricom.co.ke',
-  callbackUrl: process.env.MPESA_CALLBACK_URL || 'https://your-domain.com/api/mpesa/callback'
+  callbackUrl: process.env.MPESA_CALLBACK_URL || `${process.env.APP_URL || 'http://localhost:3000'}/api/mpesa/callback`
 };
 
 // M-Pesa API functions
@@ -473,10 +478,357 @@ function formatDate(dateString) {
   });
 }
 
+// Additional email templates for edge cases
+
+// Payment failure notification
+async function sendPaymentFailureEmail(orderData, userEmail, userName, failureReason) {
+  try {
+    const mailOptions = {
+      from: `"HIRE-ME" <${emailConfig.auth.user}>`,
+      to: userEmail,
+      subject: `Payment Failed - ${orderData.order_number}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;"><i class="fas fa-exclamation-triangle"></i> Payment Failed</h1>
+            <p style="margin: 10px 0 0 0;">Action Required</p>
+          </div>
+
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Hi ${userName},</h2>
+
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+              We were unable to process your payment for order <strong>${orderData.order_number}</strong>.
+            </p>
+
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #dc2626; margin-bottom: 15px; font-size: 18px;">Payment Details</h3>
+              <p style="margin-bottom: 8px;"><strong>Order Number:</strong> ${orderData.order_number}</p>
+              <p style="margin-bottom: 8px;"><strong>Amount:</strong> ${formatCurrency(orderData.total_amount)}</p>
+              <p style="margin-bottom: 8px;"><strong>Reason:</strong> ${failureReason}</p>
+              <p style="margin-bottom: 0;"><strong>Date:</strong> ${formatDate(new Date().toISOString())}</p>
+            </div>
+
+            <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h4 style="color: #0ea5e9; margin-bottom: 15px;">💳 Retry Payment</h4>
+              <p style="margin-bottom: 10px;"><strong>Pay Bill:</strong> 174379</p>
+              <p style="margin-bottom: 10px;"><strong>Account:</strong> ${orderData.order_number}</p>
+              <p style="margin-bottom: 0;"><strong>Amount:</strong> ${formatCurrency(orderData.total_amount)}</p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.APP_URL || 'http://localhost:3000'}/checkout.html?retry=true&orderId=${orderData.id}"
+                 style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                Retry Payment
+              </a>
+            </div>
+
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 5px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #92400e; font-size: 14px;">
+                <strong>Need Help?</strong> Contact our support team if you need assistance with your payment.
+              </p>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">
+              If you have any questions about this payment failure, please don't hesitate to contact us.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Payment failure email sent to ${userEmail}: ${result.messageId}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending payment failure email:', error);
+    return false;
+  }
+}
+
+// Order cancellation confirmation
+async function sendOrderCancellationEmail(orderData, userEmail, userName, cancellationReason) {
+  try {
+    const mailOptions = {
+      from: `"HIRE-ME" <${emailConfig.auth.user}>`,
+      to: userEmail,
+      subject: `Order Cancelled - ${orderData.order_number}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;"><i class="fas fa-times-circle"></i> Order Cancelled</h1>
+            <p style="margin: 10px 0 0 0;">Confirmation</p>
+          </div>
+
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Hi ${userName},</h2>
+
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+              Your order <strong>${orderData.order_number}</strong> has been cancelled as requested.
+            </p>
+
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #1f2937; margin-bottom: 15px; font-size: 18px;">Order Summary</h3>
+              <p><strong>Order Number:</strong> ${orderData.order_number}</p>
+              <p><strong>Cancellation Date:</strong> ${formatDate(new Date().toISOString())}</p>
+              <p><strong>Reason:</strong> ${cancellationReason || 'Customer requested'}</p>
+              <p><strong>Refund Status:</strong> <span style="color: #059669; font-weight: 600;">Processing</span></p>
+            </div>
+
+            <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h4 style="color: #0ea5e9; margin-bottom: 15px;">📋 What happens next?</h4>
+              <ul style="color: #0c4a6e; margin: 0; padding-left: 20px;">
+                <li>Refund will be processed within 3-5 business days</li>
+                <li>You'll receive a confirmation email once refund is processed</li>
+                <li>Items have been released back to inventory</li>
+              </ul>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.APP_URL || 'http://localhost:3000'}/products"
+                 style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                Browse More Equipment
+              </a>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">
+              If you didn't request this cancellation or have questions, please contact our support team immediately.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Order cancellation email sent to ${userEmail}: ${result.messageId}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending order cancellation email:', error);
+    return false;
+  }
+}
+
+// Inventory shortage notification
+async function sendInventoryShortageEmail(productData, userEmail, userName) {
+  try {
+    const mailOptions = {
+      from: `"HIRE-ME" <${emailConfig.auth.user}>`,
+      to: userEmail,
+      subject: `Out of Stock Alert - ${productData.name}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;"><i class="fas fa-exclamation-triangle"></i> Out of Stock</h1>
+            <p style="margin: 10px 0 0 0;">Item Currently Unavailable</p>
+          </div>
+
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Hi ${userName},</h2>
+
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+              We're sorry to inform you that the item you're interested in is currently out of stock.
+            </p>
+
+            <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #9a3412; margin-bottom: 15px; font-size: 18px;">Item Details</h3>
+              <p style="margin-bottom: 8px;"><strong>Product:</strong> ${productData.name}</p>
+              <p style="margin-bottom: 8px;"><strong>Price:</strong> ${formatCurrency(productData.price)}</p>
+              <p style="margin-bottom: 0;"><strong>Category:</strong> ${productData.category}</p>
+            </div>
+
+            <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h4 style="color: #0ea5e9; margin-bottom: 15px;">🔄 What can you do?</h4>
+              <ul style="color: #0c4a6e; margin: 0; padding-left: 20px;">
+                <li>We'll notify you as soon as this item is back in stock</li>
+                <li>Browse similar items in the same category</li>
+                <li>Contact us for alternative recommendations</li>
+              </ul>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.APP_URL || 'http://localhost:3000'}/products?category=${productData.category}"
+                 style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                Browse Similar Items
+              </a>
+            </div>
+
+            <div style="text-align: center; margin: 15px 0;">
+              <a href="${process.env.APP_URL || 'http://localhost:3000'}/contact.html"
+                 style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 14px;">
+                Contact Support
+              </a>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">
+              We're constantly updating our inventory. Thank you for your patience!
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Inventory shortage email sent to ${userEmail}: ${result.messageId}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending inventory shortage email:', error);
+    return false;
+  }
+}
+
+// Delivery delay notification
+async function sendDeliveryDelayEmail(orderData, userEmail, userName, delayReason, newDeliveryDate) {
+  try {
+    const mailOptions = {
+      from: `"HIRE-ME" <${emailConfig.auth.user}>`,
+      to: userEmail,
+      subject: `Delivery Update - ${orderData.order_number}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #8b4513, #a16207); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;"><i class="fas fa-clock"></i> Delivery Update</h1>
+            <p style="margin: 10px 0 0 0;">Important Information</p>
+          </div>
+
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Hi ${userName},</h2>
+
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+              We want to inform you about a slight delay with your order <strong>${orderData.order_number}</strong>.
+            </p>
+
+            <div style="background: #fef7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #9a3412; margin-bottom: 15px; font-size: 18px;">Delivery Update</h3>
+              <p style="margin-bottom: 8px;"><strong>Order Number:</strong> ${orderData.order_number}</p>
+              <p style="margin-bottom: 8px;"><strong>Original Delivery:</strong> ${formatDate(orderData.created_at)}</p>
+              <p style="margin-bottom: 8px;"><strong>New Delivery Date:</strong> <span style="color: #059669; font-weight: 600;">${formatDate(newDeliveryDate)}</span></p>
+              <p style="margin-bottom: 0;"><strong>Reason:</strong> ${delayReason}</p>
+            </div>
+
+            <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h4 style="color: #0ea5e9; margin-bottom: 15px;">📦 What this means</h4>
+              <ul style="color: #0c4a6e; margin: 0; padding-left: 20px;">
+                <li>Your order is confirmed and being processed</li>
+                <li>Items are reserved for you</li>
+                <li>New delivery date: ${formatDate(newDeliveryDate)}</li>
+                <li>You'll receive tracking updates</li>
+              </ul>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.APP_URL || 'http://localhost:3000'}/confirmation.html?orderId=${orderData.id}"
+                 style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                Track Your Order
+              </a>
+            </div>
+
+            <div style="background: #f3f4f6; border-radius: 5px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #374151; font-size: 14px;">
+                <strong>Need to reschedule?</strong> Contact us if you need to change your delivery date or have special requirements.
+              </p>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">
+              We apologize for any inconvenience this may cause. Thank you for your understanding.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Delivery delay email sent to ${userEmail}: ${result.messageId}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending delivery delay email:', error);
+    return false;
+  }
+}
+
+// Account suspension notification
+async function sendAccountSuspensionEmail(userEmail, userName, suspensionReason, suspensionDuration) {
+  try {
+    const mailOptions = {
+      from: `"HIRE-ME" <${emailConfig.auth.user}>`,
+      to: userEmail,
+      subject: 'Account Suspension Notice - HIRE-ME',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;"><i class="fas fa-user-lock"></i> Account Suspension</h1>
+            <p style="margin: 10px 0 0 0;">Important Notice</p>
+          </div>
+
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Dear ${userName},</h2>
+
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+              This is to inform you that your HIRE-ME account has been temporarily suspended.
+            </p>
+
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #dc2626; margin-bottom: 15px; font-size: 18px;">Suspension Details</h3>
+              <p style="margin-bottom: 8px;"><strong>Reason:</strong> ${suspensionReason}</p>
+              <p style="margin-bottom: 8px;"><strong>Duration:</strong> ${suspensionDuration}</p>
+              <p style="margin-bottom: 8px;"><strong>Suspended On:</strong> ${formatDate(new Date().toISOString())}</p>
+              <p style="margin-bottom: 0;"><strong>Status:</strong> <span style="color: #dc2626; font-weight: 600;">Account Access Restricted</span></p>
+            </div>
+
+            <div style="background: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h4 style="color: #d97706; margin-bottom: 15px;">⚠️ What this means</h4>
+              <ul style="color: #92400e; margin: 0; padding-left: 20px;">
+                <li>You cannot place new orders during suspension</li>
+                <li>Existing orders will be processed normally</li>
+                <li>You can contact support for urgent matters</li>
+                <li>Account will be automatically restored after suspension period</li>
+              </ul>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.APP_URL || 'http://localhost:3000'}/contact.html"
+                 style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                Contact Support
+              </a>
+            </div>
+
+            <div style="background: #f3f4f6; border-radius: 5px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #374151; font-size: 14px;">
+                <strong>Appeal Process:</strong> If you believe this suspension is in error, please contact our support team with detailed explanation.
+              </p>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">
+              This suspension is in accordance with our Terms of Service. Thank you for your understanding.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Account suspension email sent to ${userEmail}: ${result.messageId}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending account suspension email:', error);
+    return false;
+  }
+}
+
 // Email service functions
 async function sendVerificationEmail(email, name, verificationToken) {
   try {
-    const verificationUrl = `${process.env.APP_URL || 'http://localhost:3000'}/verify-email.html?token=${verificationToken}`;
+    const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+    const verificationUrl = `${baseUrl}/verify-email.html?token=${verificationToken}`;
 
     const mailOptions = {
       from: `"HIRE-ME" <${emailConfig.auth.user}>`,
@@ -535,7 +887,8 @@ async function sendVerificationEmail(email, name, verificationToken) {
 
 async function sendPasswordResetEmail(email, name, resetToken) {
   try {
-    const resetUrl = `${process.env.APP_URL || 'http://localhost:3000'}/reset-password.html?token=${resetToken}`;
+    const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+    const resetUrl = `${baseUrl}/reset-password.html?token=${resetToken}`;
 
     const mailOptions = {
       from: `"HIRE-ME" <${emailConfig.auth.user}>`,
@@ -929,7 +1282,7 @@ app.post('/api/login', loginLimiter, (req, res) => {
       }
 
       // Create JWT token
-      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'hire-me-secret-key', { expiresIn: '1h' });
+      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'hire-me-secret-key-change-in-production', { expiresIn: '1h' });
 
       req.session.userId = user.id;
       req.session.userEmail = user.email;
