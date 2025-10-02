@@ -39,6 +39,11 @@ function initializeApp() {
 function setupEventListeners() {
     // Navigation
     document.getElementById('cartBtn').addEventListener('click', openCartModal);
+    // We'll handle login/register through dedicated pages, but keep the logout listener
+    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        handleLogout();
+    });
 
     // Forms
     document.getElementById('contactForm').addEventListener('submit', handleContact);
@@ -49,7 +54,6 @@ function setupEventListeners() {
         // Redirect to register page instead of opening modal
         window.location.href = 'register.html';
     });
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
     document.getElementById('checkoutBtn').addEventListener('click', handleCheckout);
 
     // Close modals when clicking outside
@@ -463,17 +467,39 @@ async function loadCartFromServer() {
 function updateCartDisplay() {
   const cartItems = document.getElementById('cartItems');
   if (!cart || cart.length === 0) {
-    cartItems.innerHTML = '<p class="text-center text-muted">Your cart is empty</p>';
+    cartItems.innerHTML = `
+      <div class="text-center py-5">
+        <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+        <h5 class="mb-3">Your cart is empty</h5>
+        <p class="text-muted mb-4">Looks like you haven't added anything to your cart yet</p>
+        <button class="btn btn-primary" data-bs-dismiss="modal" onclick="scrollToSection('services')">
+          <i class="fas fa-search me-2"></i>Find Rentals
+        </button>
+      </div>
+    `;
+    document.getElementById('cartTotal').textContent = 'KES 0';
     return;
   }
 
+  // Calculate total
+  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  document.getElementById('cartTotal').textContent = `KES ${total}`;
+
   cartItems.innerHTML = cart.map((item) => `
-    <div class="cart-item d-flex align-items-center">
-      <img src="${item.image || 'Img/Vehicle.jpeg'}" alt="${item.name}" class="me-3" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+    <div class="cart-item d-flex align-items-center border-bottom pb-3 mb-3">
+      <img src="${item.image || 'Img/Vehicle.jpeg'}" alt="${item.name}" class="me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
       <div class="flex-grow-1">
         <h6 class="mb-1">${item.name}</h6>
-        <p class="mb-1 text-muted">KES ${item.price}/day</p>
-        <small class="text-muted">Quantity: ${item.quantity}</small>
+        <p class="mb-1 text-muted small">${item.description}</p>
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small class="text-muted">Quantity: ${item.quantity}</small>
+          </div>
+          <div class="text-end">
+            <div class="fw-bold">KES ${item.price * item.quantity}</div>
+            <small class="text-muted">KES ${item.price}/day</small>
+          </div>
+        </div>
       </div>
       <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${item.id})">
         <i class="fas fa-trash"></i>
@@ -486,7 +512,7 @@ function handleCheckout() {
     if (!currentUser) {
         showToast('Please login to proceed with checkout', 'warning');
         closeModal('cartModal');
-        openModal('loginModal');
+        window.location.href = 'login.html';
         return;
     }
 
@@ -495,7 +521,8 @@ function handleCheckout() {
         return;
     }
 
-    showToast('Checkout functionality coming soon!', 'info');
+    // Redirect to checkout page
+    window.location.href = 'checkout.html';
 }
 
 // Enhanced dropdown menu functions

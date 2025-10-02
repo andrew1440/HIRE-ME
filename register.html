@@ -39,14 +39,14 @@
             background: white;
         }
         
-        .form-control {
+        .form-control, .form-select {
             border-radius: 8px;
             padding: 12px 16px;
             border: 2px solid #e5e7eb;
             transition: all 0.3s ease;
         }
         
-        .form-control:focus {
+        .form-control:focus, .form-select:focus {
             border-color: #2563eb;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
@@ -159,6 +159,10 @@
             font-size: 12px;
             color: #64748b;
         }
+        
+        .alert {
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -172,6 +176,7 @@
                 <p class="mb-0">Join our community today</p>
             </div>
             <div class="register-body">
+                <div id="alertContainer"></div>
                 <form id="registerForm">
                     <div class="mb-3">
                         <label for="name" class="form-label">Full Name</label>
@@ -187,7 +192,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="location" class="form-label">Location</label>
-                        <select class="form-control" id="location" required>
+                        <select class="form-select" id="location" required>
                             <option value="">Select Location</option>
                             <option value="nairobi">Nairobi</option>
                             <option value="kisumu">Kisumu</option>
@@ -254,6 +259,18 @@
             }
         });
         
+        // Show alert function
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            alertContainer.innerHTML = alertHtml;
+        }
+        
         // Form submission
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -284,13 +301,18 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    alert('Registration successful! Please login.');
-                    window.location.href = 'login.html';
+                    showAlert('Registration successful! Please login.', 'success');
+                    // Reset form
+                    this.reset();
+                    // Redirect to login page after a short delay
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
                 } else {
-                    alert(result.message || 'Registration failed. Please try again.');
+                    showAlert(result.message || 'Registration failed. Please try again.', 'danger');
                 }
             } catch (error) {
-                alert('Registration failed. Please try again.');
+                showAlert('Registration failed. Please try again.', 'danger');
                 console.error('Registration error:', error);
             } finally {
                 // Reset button

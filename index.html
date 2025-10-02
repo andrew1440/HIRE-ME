@@ -79,7 +79,7 @@
                                     <i class="fas fa-user-circle me-2"></i>
                                     <span>View Profile</span>
                                 </a>
-                                <a class="dropdown-item" href="#" onclick="viewOrders()">
+                                <a class="dropdown-item" href="orders.html">
                                     <i class="fas fa-shopping-bag me-2"></i>
                                     <span>My Orders</span>
                                 </a>
@@ -329,8 +329,10 @@
     <div class="modal fade" id="cartModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Your Cart</h5>
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title">
+                        <i class="fas fa-shopping-cart me-2"></i>Your Cart
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -339,8 +341,19 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Continue Shopping</button>
-                    <button type="button" class="btn btn-primary" id="checkoutBtn">Proceed to Checkout</button>
+                    <div class="d-flex justify-content-between w-100 align-items-center">
+                        <div>
+                            <strong>Total: <span id="cartTotal" class="text-primary">KES 0</span></strong>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+                                <i class="fas fa-arrow-left me-1"></i>Continue Shopping
+                            </button>
+                            <button type="button" class="btn btn-primary" id="checkoutBtn">
+                                <i class="fas fa-credit-card me-1"></i>Proceed to Checkout
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

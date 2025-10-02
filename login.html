@@ -154,6 +154,10 @@
         .brand-logo i {
             margin-right: 10px;
         }
+        
+        .alert {
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -167,6 +171,7 @@
                 <p class="mb-0">Sign in to your account</p>
             </div>
             <div class="login-body">
+                <div id="alertContainer"></div>
                 <form id="loginForm">
                     <div class="mb-3">
                         <label for="email" class="form-label">Email Address</label>
@@ -230,6 +235,18 @@
             }
         });
         
+        // Show alert function
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            alertContainer.innerHTML = alertHtml;
+        }
+        
         // Form submission
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -260,10 +277,10 @@
                     localStorage.setItem('token', result.token);
                     window.location.href = 'index.html';
                 } else {
-                    alert(result.message || 'Login failed. Please try again.');
+                    showAlert(result.message || 'Login failed. Please try again.', 'danger');
                 }
             } catch (error) {
-                alert('Login failed. Please try again.');
+                showAlert('Login failed. Please try again.', 'danger');
                 console.error('Login error:', error);
             } finally {
                 // Reset button
@@ -271,6 +288,26 @@
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
                 submitBtn.prepend(spinner);
+            }
+        });
+        
+        // Check if user is already logged in
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                // Verify token validity
+                fetch('/api/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        // User is already logged in, redirect to main page
+                        window.location.href = 'index.html';
+                    }
+                }).catch(error => {
+                    console.error('Token verification error:', error);
+                });
             }
         });
     </script>
