@@ -1387,3 +1387,325 @@ document.addEventListener('click', function(event) {
         hideSearchSuggestions();
     }
 });
+
+// External Rental Scraping Functionality
+let externalRentalOffset = 0;
+const externalRentalLimit = 12;
+
+// Trigger scraping of rental listings
+async function triggerScraping() {
+    const scrapeBtn = document.getElementById('scrapeNowBtn');
+    const originalText = scrapeBtn.textContent;
+    
+    try {
+        scrapeBtn.textContent = 'Scraping in Progress...';
+        scrapeBtn.disabled = true;
+        
+        const response = await fetch('/api/scrape/rentals', {
+            method: 'POST',
+            credentials: 'include', // Include session cookies
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showToast('Scraping started successfully!', 'success');
+            
+            // Reload external rentals after a delay to give scraping time to complete
+            setTimeout(() => {
+                externalRentalOffset = 0;
+                loadExternalRentals();
+            }, 5000); // Wait 5 seconds before reloading
+        } else {
+            showToast(result.message || 'Failed to start scraping', 'error');
+        }
+    } catch (error) {
+        console.error('Scraping error:', error);
+        showToast('Error starting scraping process', 'error');
+    } finally {
+        scrapeBtn.textContent = originalText;
+        scrapeBtn.disabled = false;
+    }
+}
+
+// Load external rental listings
+async function loadExternalRentals(offset = 0) {
+    try {
+        // Build query string with filters
+        let queryString = `limit=${externalRentalLimit}&offset=${offset}`;
+        
+        if (externalRentalFilters.location) {
+            queryString += `&location=${encodeURIComponent(externalRentalFilters.location)}`;
+        }
+        
+        if (externalRentalFilters.minPrice) {
+            queryString += `&minPrice=${externalRentalFilters.minPrice}`;
+        }
+        
+        if (externalRentalFilters.maxPrice) {
+            queryString += `&maxPrice=${externalRentalFilters.maxPrice}`;
+        }
+        
+        if (externalRentalFilters.category) {
+            queryString += `&category=${externalRentalFilters.category}`;
+        }
+        
+        if (externalRentalFilters.sortBy) {
+            queryString += `&sortBy=${externalRentalFilters.sortBy}`;
+        }
+        
+        const response = await fetch(`/api/scraped-rentals?${queryString}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayExternalRentals(data.rentals, offset === 0);
+            
+            // Hide/show load more button based on results
+            const loadMoreBtn = document.getElementById('loadMoreRentals');
+            if (loadMoreBtn) {
+                loadMoreBtn.style.display = data.rentals.length < externalRentalLimit ? 'none' : 'block';
+            }
+        } else {
+            console.error('Failed to load external rentals:', data.message);
+        }
+    } catch (error) {
+        console.error('Error loading external rentals:', error);
+    }
+}
+
+// Display external rental listings
+function displayExternalRentals(rentals, clearPrevious = true) {
+    const container = document.getElementById('externalRentalsContainer');
+    
+    if (!container) return;
+    
+    if (clearPrevious) {
+        container.innerHTML = '';
+    }
+    
+    if (rentals.length === 0) {
+        if (clearPrevious) {
+            container.innerHTML = `
+                <div class="col-12 text-center">
+                    <p class="text-muted">No external rental listings found. Click "Scrape Rental Listings Now" to search for current listings.</p>
+                </div>
+            `;
+        }
+        return;
+    }
+    
+    const rentalCards = rentals.map(rental => `
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="position-relative">
+                    ${rental.image_url ? `
+                        <img src="${rental.image_url}" class="card-img-top" alt="${rental.title}" style="height: 200px; object-fit: cover;" onerror="this.onerror=null; this.src='Img/logo.png';">
+                    ` : `
+                        <div class="bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="fas fa-image fa-3x text-white opacity-50"></i>
+                        </div>
+                    `}
+                    <div class="position-absolute top-0 start-0 m-2">
+                        <span class="badge bg-info">${rental.source}</span>
+                    </div>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <h6 class="card-title">${truncateText(rental.title, 40)}</h6>
+                    <p class="card-text text-muted small mb-2">
+                        <i class="fas fa-map-marker-alt me-1"></i>${truncateText(rental.location, 30)}
+                    </p>
+                    <p class="card-text flex-grow-1">${truncateText(rental.description, 100)}</p>
+                    <div class="mt-auto pt-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong class="text-primary">KES ${rental.price.toLocaleString()}</strong>
+                            <small class="text-muted">${formatDate(rental.scraped_at)}</small>
+                        </div>
+                        <a href="${rental.source_url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML += rentalCards;
+}
+
+// Load more external rentals
+async function loadMoreExternalRentals() {
+    externalRentalOffset += externalRentalLimit;
+    await loadExternalRentals(externalRentalOffset);
+}
+
+// Helper function to truncate text
+function truncateText(text, maxLength) {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+}
+
+// Helper function to format date
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+}
+
+// External rental filters state
+let externalRentalFilters = {};
+
+// Load external rentals when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadExternalRentals();
+    loadLocationStatsChart();
+    loadCategoryStatsChart();
+});
+
+// Apply filters for external rentals
+function applyExternalFilters() {
+    externalRentalFilters = {
+        location: document.getElementById('filterLocation')?.value || '',
+        minPrice: document.getElementById('filterMinPrice')?.value || '',
+        maxPrice: document.getElementById('filterMaxPrice')?.value || '',
+        category: document.getElementById('filterCategory')?.value || '',
+        sortBy: document.getElementById('sortByFilter')?.value || 'newest'
+    };
+    
+    // Reset offset and reload with filters
+    externalRentalOffset = 0;
+    loadExternalRentals(externalRentalOffset);
+}
+
+// Clear filters for external rentals
+function clearExternalFilters() {
+    document.getElementById('filterLocation').value = '';
+    document.getElementById('filterMinPrice').value = '';
+    document.getElementById('filterMaxPrice').value = '';
+    document.getElementById('filterCategory').value = '';
+    document.getElementById('sortByFilter').value = 'newest';
+    
+    externalRentalFilters = {};
+    
+    // Reset offset and reload
+    externalRentalOffset = 0;
+    loadExternalRentals(externalRentalOffset);
+}
+
+// Load location stats chart
+async function loadLocationStatsChart() {
+    try {
+        const response = await fetch('/api/scraped-rentals/location-stats');
+        const data = await response.json();
+        
+        if (response.ok && data.length > 0) {
+            const ctx = document.getElementById('locationStatsChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (window.locationStatsChart) {
+                window.locationStatsChart.destroy();
+            }
+            
+            const labels = data.slice(0, 10).map(item => item.location);
+            const counts = data.slice(0, 10).map(item => item.count);
+            const avgPrices = data.slice(0, 10).map(item => Math.round(item.avg_price));
+            
+            window.locationStatsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Number of Listings',
+                        data: counts,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Top 10 Locations by Rental Listings'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Listings'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error loading location stats chart:', error);
+    }
+}
+
+// Load category stats chart
+async function loadCategoryStatsChart() {
+    try {
+        const response = await fetch('/api/scraped-rentals/category-stats');
+        const data = await response.json();
+        
+        if (response.ok && data.length > 0) {
+            const ctx = document.getElementById('categoryStatsChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (window.categoryStatsChart) {
+                window.categoryStatsChart.destroy();
+            }
+            
+            const labels = data.map(item => item.category);
+            const counts = data.map(item => item.count);
+            
+            window.categoryStatsChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.6)',
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(255, 205, 86, 0.6)',
+                            'rgba(75, 192, 192, 0.6)',
+                            'rgba(153, 102, 255, 0.6)',
+                            'rgba(255, 159, 64, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 205, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Rental Categories Distribution'
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error loading category stats chart:', error);
+    }
+}

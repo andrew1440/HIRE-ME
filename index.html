@@ -8,6 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -265,6 +266,101 @@
             </div>
             <div class="row g-4" id="featuredProducts">
                 <!-- Products will be loaded dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <!-- External Rental Listings -->
+    <section id="externalRentals" class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">External Rental Listings</h2>
+                <p class="lead text-muted">Additional rental options from trusted sources in Kenya</p>
+                <button id="scrapeNowBtn" class="btn btn-primary me-2" onclick="triggerScraping()">Scrape Rental Listings Now</button>
+                <button id="refreshRentalsBtn" class="btn btn-success" onclick="loadExternalRentals()">Refresh Listings</button>
+            </div>
+            
+            <!-- Filters -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <label for="filterLocation" class="form-label">Location</label>
+                    <input type="text" class="form-control" id="filterLocation" placeholder="Enter location...">
+                </div>
+                <div class="col-md-2">
+                    <label for="filterMinPrice" class="form-label">Min Price</label>
+                    <input type="number" class="form-control" id="filterMinPrice" placeholder="Min">
+                </div>
+                <div class="col-md-2">
+                    <label for="filterMaxPrice" class="form-label">Max Price</label>
+                    <input type="number" class="form-control" id="filterMaxPrice" placeholder="Max">
+                </div>
+                <div class="col-md-3">
+                    <label for="filterCategory" class="form-label">Category</label>
+                    <select class="form-select" id="filterCategory">
+                        <option value="">All Categories</option>
+                        <option value="property">Property</option>
+                        <option value="vehicle">Vehicle</option>
+                        <option value="equipment">Equipment</option>
+                        <option value="electronics">Electronics</option>
+                        <option value="furniture">Furniture</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="sortByFilter" class="form-label">Sort By</label>
+                    <select class="form-select" id="sortByFilter">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="price_low">Price: Low to High</option>
+                        <option value="price_high">Price: High to Low</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-12">
+                    <button id="applyFiltersBtn" class="btn btn-primary" onclick="applyExternalFilters()">Apply Filters</button>
+                    <button id="clearFiltersBtn" class="btn btn-outline-secondary" onclick="clearExternalFilters()">Clear Filters</button>
+                </div>
+            </div>
+            
+            <div class="row g-4" id="externalRentalsContainer">
+                <!-- External rental listings will be loaded here -->
+            </div>
+            <div class="text-center mt-4">
+                <button id="loadMoreRentals" class="btn btn-outline-primary" onclick="loadMoreExternalRentals()">Load More</button>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Rental Statistics Visualization -->
+    <section id="rentalStats" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Rental Market Insights</h2>
+                <p class="lead text-muted">Statistics and trends from rental listings across Kenya</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Top Locations by Listings Count</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="locationStatsChart" style="height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Rental Categories Distribution</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="categoryStatsChart" style="height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

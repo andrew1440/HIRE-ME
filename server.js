@@ -15,6 +15,7 @@ const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const axios = require('axios');
+const KenyaRentalScraper = require('./scrapers/kenya_rental_scraper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1083,6 +1084,55 @@ const db = new sqlite3.Database('./hire-me.db', (err) => {
       FOREIGN KEY (product_id) REFERENCES products (id)
     )`);
 
+    // Create availability calendar table
+    db.run(`CREATE TABLE IF NOT EXISTS availability (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER,
+      date DATE,
+      status TEXT DEFAULT 'available', -- available, booked, blocked, maintenance
+      booking_id INTEGER, -- reference to booking if booked
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (product_id) REFERENCES products (id),
+      UNIQUE(product_id, date)
+    )`);
+
+    // Create bookings table
+    db.run(`CREATE TABLE IF NOT EXISTS bookings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      product_id INTEGER,
+      order_id INTEGER, -- link to order when confirmed
+      start_date DATE,
+      end_date DATE,
+      duration_days INTEGER,
+      status TEXT DEFAULT 'pending', -- pending, confirmed, active, completed, cancelled
+      total_amount REAL,
+      deposit_amount REAL DEFAULT 0,
+      payment_status TEXT DEFAULT 'pending',
+      special_requests TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id),
+      FOREIGN KEY (product_id) REFERENCES products (id),
+      FOREIGN KEY (order_id) REFERENCES orders (id)
+    )`);
+
+    // Create booking items table for multi-item bookings
+    db.run(`CREATE TABLE IF NOT EXISTS booking_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      booking_id INTEGER,
+      product_id INTEGER,
+      quantity INTEGER DEFAULT 1,
+      unit_price REAL,
+      subtotal REAL,
+      start_date DATE,
+      end_date DATE,
+      FOREIGN KEY (booking_id) REFERENCES bookings (id),
+      FOREIGN KEY (product_id) REFERENCES products (id)
+    )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS contacts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT,
@@ -1097,6 +1147,7 @@ const db = new sqlite3.Database('./hire-me.db', (err) => {
       product_id INTEGER,
       quantity INTEGER DEFAULT 1,
       added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id),
       FOREIGN KEY (product_id) REFERENCES products (id)
     )`);
@@ -1615,6 +1666,400 @@ app.post('/api/cart/add-multiple', requireAuth, (req, res) => {
   }).catch(err => {
     console.error('Bulk cart add error:', err);
     res.status(500).json({ message: 'Failed to add items to cart' });
+  });
+});
+
+// Booking Calendar API Endpoints
+
+// Get availability for a product
+app.get('/api/availability/:productId', (req, res) => {
+  const productId = req.params.productId;
+  const { startDate, endDate } = req.query;
+
+  let query = 'SELECT * FROM availability WHERE product_id = ?';
+  let params = [productId];
+
+  if (startDate && endDate) {
+    query += ' AND date BETWEEN ? AND ?';
+    params.push(startDate, endDate);
+  }
+
+  query += ' ORDER BY date ASC';
+
+  db.all(query, params, (err, rows) => {
+    if (err) {
+      console.error('Availability fetch error:', err);
+      return res.status(500).json({ message: 'Failed to fetch availability' });
+    }
+
+    res.json({
+      productId: parseInt(productId),
+      availability: rows,
+      dateRange: { startDate, endDate }
+    });
+  });
+});
+
+// Check availability for date range
+app.post('/api/availability/check', (req, res) => {
+  const { productId, startDate, endDate } = req.body;
+
+  if (!productId || !startDate || !endDate) {
+    return res.status(400).json({ message: 'Product ID, start date, and end date are required' });
+  }
+
+  // Calculate date range
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const dates = [];
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    dates.push(d.toISOString().split('T')[0]);
+  }
+
+  // Check availability for each date
+  const placeholders = dates.map(() => '?').join(',');
+  const query = `SELECT date, status, notes FROM availability
+                 WHERE product_id = ? AND date IN (${placeholders})
+                 ORDER BY date ASC`;
+
+  db.all(query, [productId, ...dates], (err, rows) => {
+    if (err) {
+      console.error('Availability check error:', err);
+      return res.status(500).json({ message: 'Failed to check availability' });
+    }
+
+    // Create availability map
+    const availabilityMap = {};
+    dates.forEach(date => {
+      availabilityMap[date] = { status: 'available', notes: null };
+    });
+
+    // Update with actual availability data
+    rows.forEach(row => {
+      availabilityMap[row.date] = {
+        status: row.status,
+        notes: row.notes
+      };
+    });
+
+    // Check if all dates are available
+    const unavailableDates = dates.filter(date =>
+      availabilityMap[date].status !== 'available'
+    );
+
+    res.json({
+      productId: parseInt(productId),
+      startDate,
+      endDate,
+      totalDays: dates.length,
+      available: unavailableDates.length === 0,
+      unavailableDates,
+      availability: availabilityMap
+    });
+  });
+});
+
+// Create a booking
+app.post('/api/bookings', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  const { productId, startDate, endDate, specialRequests } = req.body;
+
+  if (!productId || !startDate || !endDate) {
+    return res.status(400).json({ message: 'Product ID, start date, and end date are required' });
+  }
+
+  // Validate date range
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (start < today) {
+    return res.status(400).json({ message: 'Start date cannot be in the past' });
+  }
+
+  if (end <= start) {
+    return res.status(400).json({ message: 'End date must be after start date' });
+  }
+
+  const durationDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+  // Check product availability
+  const checkAvailability = () => {
+    return new Promise((resolve, reject) => {
+      const dates = [];
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        dates.push(d.toISOString().split('T')[0]);
+      }
+
+      const placeholders = dates.map(() => '?').join(',');
+      const query = `SELECT COUNT(*) as unavailable FROM availability
+                     WHERE product_id = ? AND date IN (${placeholders})
+                     AND status != 'available'`;
+
+      db.get(query, [productId, ...dates], (err, row) => {
+        if (err) reject(err);
+        else resolve(row.unavailable === 0);
+      });
+    });
+  };
+
+  // Get product details
+  const getProduct = () => {
+    return new Promise((resolve, reject) => {
+      db.get('SELECT * FROM products WHERE id = ? AND available = 1', [productId], (err, row) => {
+        if (err) reject(err);
+        else if (!row) reject(new Error('Product not found'));
+        else resolve(row);
+      });
+    });
+  };
+
+  Promise.all([checkAvailability(), getProduct()]).then(([isAvailable, product]) => {
+    if (!isAvailable) {
+      return res.status(400).json({ message: 'Selected dates are not available' });
+    }
+
+    // Calculate total amount
+    const totalAmount = product.price * durationDays;
+
+    // Create booking
+    db.run(`INSERT INTO bookings (user_id, product_id, start_date, end_date, duration_days,
+              total_amount, special_requests, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, productId, startDate, endDate, durationDays, totalAmount, specialRequests || '', 'pending'],
+      function(err) {
+        if (err) {
+          console.error('Booking creation error:', err);
+          return res.status(500).json({ message: 'Failed to create booking' });
+        }
+
+        const bookingId = this.lastID;
+
+        // Update availability for booked dates
+        const dates = [];
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          dates.push(d.toISOString().split('T')[0]);
+        }
+
+        const availabilityUpdates = dates.map(date => {
+          return new Promise((resolve, reject) => {
+            db.run(`INSERT OR REPLACE INTO availability (product_id, date, status, booking_id)
+                    VALUES (?, ?, 'booked', ?)`,
+              [productId, date, bookingId], function(err) {
+                if (err) reject(err);
+                else resolve();
+              });
+          });
+        });
+
+        Promise.all(availabilityUpdates).then(() => {
+          res.status(201).json({
+            message: 'Booking created successfully',
+            bookingId,
+            booking: {
+              id: bookingId,
+              productId,
+              startDate,
+              endDate,
+              durationDays,
+              totalAmount,
+              status: 'pending'
+            }
+          });
+        }).catch(err => {
+          console.error('Availability update error:', err);
+          res.status(500).json({ message: 'Booking created but availability update failed' });
+        });
+      });
+  }).catch(err => {
+    console.error('Booking validation error:', err);
+    res.status(400).json({ message: err.message || 'Booking validation failed' });
+  });
+});
+
+// Get user's bookings
+app.get('/api/bookings', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  const { status, limit = 20, offset = 0 } = req.query;
+
+  let query = `
+    SELECT b.*, p.name as product_name, p.image as product_image, p.location
+    FROM bookings b
+    JOIN products p ON b.product_id = p.id
+    WHERE b.user_id = ?
+  `;
+
+  const params = [userId];
+
+  if (status) {
+    query += ' AND b.status = ?';
+    params.push(status);
+  }
+
+  query += ' ORDER BY b.created_at DESC LIMIT ? OFFSET ?';
+  params.push(parseInt(limit), parseInt(offset));
+
+  db.all(query, params, (err, rows) => {
+    if (err) {
+      console.error('Bookings fetch error:', err);
+      return res.status(500).json({ message: 'Failed to fetch bookings' });
+    }
+
+    res.json({
+      bookings: rows,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      }
+    });
+  });
+});
+
+// Get specific booking details
+app.get('/api/bookings/:id', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  const bookingId = req.params.id;
+
+  const query = `
+    SELECT b.*, p.name as product_name, p.image as product_image, p.description,
+           p.location, p.category, p.condition, p.rating, p.review_count
+    FROM bookings b
+    JOIN products p ON b.product_id = p.id
+    WHERE b.id = ? AND b.user_id = ?
+  `;
+
+  db.get(query, [bookingId, userId], (err, row) => {
+    if (err) {
+      console.error('Booking fetch error:', err);
+      return res.status(500).json({ message: 'Failed to fetch booking' });
+    }
+
+    if (!row) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    res.json({ booking: row });
+  });
+});
+
+// Cancel booking
+app.post('/api/bookings/:id/cancel', requireAuth, (req, res) => {
+  const userId = req.session.userId;
+  const bookingId = req.params.id;
+  const { reason } = req.body;
+
+  // Check if booking exists and belongs to user
+  db.get('SELECT * FROM bookings WHERE id = ? AND user_id = ?', [bookingId, userId], (err, booking) => {
+    if (err) {
+      console.error('Booking fetch error:', err);
+      return res.status(500).json({ message: 'Failed to fetch booking' });
+    }
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+      return res.status(400).json({ message: 'Only pending or confirmed bookings can be cancelled' });
+    }
+
+    // Update booking status
+    db.run('UPDATE bookings SET status = ?, updated_at = datetime("now") WHERE id = ?',
+      ['cancelled', bookingId], function(err) {
+        if (err) {
+          console.error('Booking cancellation error:', err);
+          return res.status(500).json({ message: 'Failed to cancel booking' });
+        }
+
+        // Free up availability
+        const start = new Date(booking.start_date);
+        const end = new Date(booking.end_date);
+        const dates = [];
+
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          dates.push(d.toISOString().split('T')[0]);
+        }
+
+        const availabilityUpdates = dates.map(date => {
+          return new Promise((resolve, reject) => {
+            db.run(`UPDATE availability SET status = 'available', booking_id = NULL,
+                    updated_at = datetime('now') WHERE product_id = ? AND date = ?`,
+              [booking.product_id, date], function(err) {
+                if (err) reject(err);
+                else resolve();
+              });
+          });
+        });
+
+        Promise.all(availabilityUpdates).then(() => {
+          res.json({
+            message: 'Booking cancelled successfully',
+            bookingId,
+            refundStatus: 'Processing refund if payment was made'
+          });
+        }).catch(err => {
+          console.error('Availability update error:', err);
+          res.status(500).json({ message: 'Booking cancelled but availability update failed' });
+        });
+      });
+  });
+});
+
+// Initialize availability for products (run once)
+app.post('/api/availability/initialize', (req, res) => {
+  const { months = 6 } = req.body;
+
+  // Generate dates for next N months
+  const startDate = new Date();
+  startDate.setHours(0, 0, 0, 0);
+
+  const endDate = new Date();
+  endDate.setMonth(endDate.getMonth() + months);
+
+  // Get all products
+  db.all('SELECT id FROM products WHERE available = 1', [], (err, products) => {
+    if (err) {
+      console.error('Products fetch error:', err);
+      return res.status(500).json({ message: 'Failed to fetch products' });
+    }
+
+    const availabilityInserts = [];
+
+    products.forEach(product => {
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        availabilityInserts.push({
+          product_id: product.id,
+          date: dateStr,
+          status: 'available'
+        });
+      }
+    });
+
+    // Insert availability records
+    const promises = availabilityInserts.map(item => {
+      return new Promise((resolve, reject) => {
+        db.run(`INSERT OR IGNORE INTO availability (product_id, date, status)
+                VALUES (?, ?, ?)`, [item.product_id, item.date, item.status], function(err) {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    });
+
+    Promise.all(promises).then(() => {
+      res.json({
+        message: `Initialized availability for ${products.length} products over ${months} months`,
+        productsCount: products.length,
+        monthsInitialized: months,
+        totalRecords: availabilityInserts.length
+      });
+    }).catch(err => {
+      console.error('Availability initialization error:', err);
+      res.status(500).json({ message: 'Failed to initialize availability' });
+    });
   });
 });
 
@@ -2642,6 +3087,191 @@ app.get('/api/admin/users', requireAuth, (req, res) => {
   }).catch(err => {
     console.error('Error fetching user analytics:', err);
     res.status(500).json({ message: 'Server error' });
+  });
+});
+
+// Initialize scraper instance
+const rentalScraper = new KenyaRentalScraper(db);
+
+// Start scheduled scraping (every 2 hours)
+rentalScraper.scheduleScraping(120);
+
+// Rental scraping endpoints
+
+// Manual trigger for scraping
+app.post('/api/scrape/rentals', requireAuth, async (req, res) => {
+  try {
+    // Only allow admin users to trigger scraping
+    const userId = req.session.userId;
+    db.get('SELECT * FROM users WHERE id = ?', [userId], (err, user) => {
+      if (err) {
+        console.error('User fetch error:', err);
+        return res.status(500).json({ message: 'Server error' });
+      }
+
+      // For demo purposes, we'll allow any user to scrape
+      // In production, you might want to check if user.isAdmin
+      console.log(`Scraping triggered by user: ${user ? user.email : 'unknown'}`);
+      
+      // Run scraping in background to avoid timeout
+      rentalScraper.runScraping()
+        .then(result => {
+          console.log(`Scraping completed: ${result.totalFound} found, ${result.totalSaved} saved`);
+        })
+        .catch(error => {
+          console.error('Scraping error:', error);
+        });
+
+      // Respond immediately
+      res.json({ 
+        message: 'Scraping started in background', 
+        started: true 
+      });
+    });
+  } catch (error) {
+    console.error('Scraping request error:', error);
+    res.status(500).json({ message: 'Scraping request failed' });
+  }
+});
+
+// Get scraped rental listings with advanced filtering
+app.get('/api/scraped-rentals', async (req, res) => {
+  try {
+    const { limit = 20, offset = 0, category, location, minPrice, maxPrice, source, sortBy } = req.query;
+
+    const filters = {
+      limit,
+      offset,
+      category,
+      location,
+      minPrice,
+      maxPrice,
+      source,
+      sortBy
+    };
+
+    // Get filtered rentals using scraper method
+    const rentals = await rentalScraper.getFilteredRentals(filters);
+
+    // Also get total count for pagination
+    let countQuery = 'SELECT COUNT(*) as count FROM external_rentals WHERE 1=1';
+    const countParams = [];
+
+    if (category) {
+      countQuery += ' AND category LIKE ?';
+      countParams.push(`%${category}%`);
+    }
+
+    if (location) {
+      countQuery += ' AND location LIKE ?';
+      countParams.push(`%${location}%`);
+    }
+
+    if (minPrice) {
+      countQuery += ' AND price >= ?';
+      countParams.push(parseFloat(minPrice));
+    }
+
+    if (maxPrice) {
+      countQuery += ' AND price <= ?';
+      countParams.push(parseFloat(maxPrice));
+    }
+
+    if (source) {
+      countQuery += ' AND source = ?';
+      countParams.push(source);
+    }
+
+    db.get(countQuery, countParams, (countErr, countRow) => {
+      if (countErr) {
+        console.error('Error counting scraped rentals:', countErr);
+        return res.status(500).json({ message: 'Server error' });
+      }
+
+      res.json({
+        rentals: rentals,
+        pagination: {
+          total: countRow.count,
+          limit: parseInt(limit),
+          offset: parseInt(offset)
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Error fetching scraped rentals:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get scraping statistics
+app.get('/api/scraped-rentals/stats', async (req, res) => {
+  try {
+    const stats = await rentalScraper.getScrapingStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching scraping stats:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get rental statistics by location
+app.get('/api/scraped-rentals/location-stats', (req, res) => {
+  const { category } = req.query;
+  
+  let query = `
+    SELECT 
+      location,
+      COUNT(*) as count,
+      AVG(price) as avg_price,
+      MIN(price) as min_price,
+      MAX(price) as max_price
+    FROM external_rentals 
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (category) {
+    query += ' AND category LIKE ?';
+    params.push(`%${category}%`);
+  }
+
+  query += ` 
+    GROUP BY location 
+    ORDER BY count DESC
+    LIMIT 20
+  `;
+
+  db.all(query, params, (err, rows) => {
+    if (err) {
+      console.error('Error fetching location stats:', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    res.json(rows);
+  });
+});
+
+// Get rental statistics by category
+app.get('/api/scraped-rentals/category-stats', (req, res) => {
+  const query = `
+    SELECT 
+      category,
+      COUNT(*) as count,
+      AVG(price) as avg_price,
+      MIN(price) as min_price,
+      MAX(price) as max_price
+    FROM external_rentals 
+    GROUP BY category 
+    ORDER BY count DESC
+  `;
+
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Error fetching category stats:', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    res.json(rows);
   });
 });
 
